@@ -8,11 +8,9 @@ try {
     $con = new LocalConector();
     $conex = $con->conectar();
 
-    // Consulta para obtener las rutas completadas, ordenadas por la más reciente.
-    // He añadido un campo 'FechaFinalizacion' que asumo que tienes. Si no, puedes quitarlo.
-    // Si no tienes un campo de fecha, lo he nombrado IdBitacoraCompleta para ordenar.
-    // Es MUY RECOMENDABLE añadir una columna de tipo DATETIME a BitacoraCompleta para registrar cuándo se finalizó.
-    $sql = "SELECT IdBitacoraCompleta, TiempoTotal, IdRuta, Usuario, FechaFinalizacion 
+    // Consulta ajustada a tu tabla: IdBitacoraCompleta, TiempoTotal, IdRuta, Usuario
+    // Se ordena por IdBitacoraCompleta para mostrar las rutas más recientes primero.
+    $sql = "SELECT IdBitacoraCompleta, TiempoTotal, IdRuta, Usuario 
             FROM BitacoraCompleta 
             ORDER BY IdBitacoraCompleta DESC 
             LIMIT 50"; // Limitar a las últimas 50 para no sobrecargar
@@ -51,3 +49,4 @@ try {
 
 echo json_encode($response);
 ?>
+
