@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-require_once 'db_Rutas.php';
+require_once 'db/db_Rutas.php';
 
 $response = ['success' => false, 'data' => [], 'message' => ''];
 
