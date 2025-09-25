@@ -5,8 +5,8 @@ require_once 'db/db_Rutas.php';
 $response = ['success' => false, 'message' => '', 'data' => null];
 $data = json_decode(file_get_contents('php://input'), true);
 
-if (!isset($data['folioRuta'])) {
-    $response['message'] = 'FolioRuta no proporcionado.';
+if (!$data || !isset($data['folioRuta'])) {
+    $response['message'] = 'Folio de ruta no proporcionado.';
     echo json_encode($response);
     exit;
 }
@@ -18,55 +18,53 @@ try {
     $conex = $con->conectar();
     $conex->begin_transaction();
 
-    // 1. Obtener la primera parada para calcular el tiempo
+    // 1. Obtener la fecha de la primera parada (FechaInicio), la ruta y el usuario.
     $sql_select = "SELECT MIN(Fecha) as startTime, Ruta, Usuario FROM BitacoraParadas WHERE FolioRuta = ? GROUP BY Ruta, Usuario";
     $stmt_select = $conex->prepare($sql_select);
-    if ($stmt_select === false) throw new Exception('Error al preparar consulta de tiempo: ' . $conex->error);
+    if($stmt_select === false) throw new Exception("Error al preparar la consulta de inicio: " . $conex->error);
 
     $stmt_select->bind_param("s", $folioRuta);
     $stmt_select->execute();
-    $result = $stmt_select->get_result();
-
-    if ($result->num_rows === 0) {
-        throw new Exception('No se encontró la ruta para este folio.');
-    }
-
-    $routeInfo = $result->fetch_assoc();
-    $startTime = new DateTime($routeInfo['startTime']);
-    $endTime = new DateTime(); // Hora actual
-    $diff = $endTime->getTimestamp() - $startTime->getTimestamp();
-    $tiempoTotalMinutos = round($diff / 60);
-
-    $idRuta = $routeInfo['Ruta'];
-    $usuario = $routeInfo['Usuario'];
+    $result = $stmt_select->get_result()->fetch_assoc();
     $stmt_select->close();
 
-    // 2. Insertar en la tabla BitacoraCompleta
-    $sql_insert = "INSERT INTO BitacoraCompleta (TiempoTotal, IdRuta, Usuario) VALUES (?, ?, ?)";
-    $stmt_insert = $conex->prepare($sql_insert);
-    if ($stmt_insert === false) throw new Exception('Error al preparar inserción completa: ' . $conex->error);
-
-    $stmt_insert->bind_param("iis", $tiempoTotalMinutos, $idRuta, $usuario);
-    if (!$stmt_insert->execute()) {
-        throw new Exception('Error al guardar la bitácora completa: ' . $stmt_insert->error);
+    if (!$result) {
+        throw new Exception("No se encontraron paradas para el folio: " . $folioRuta);
     }
-    $stmt_insert->close();
+
+    $startTime = $result['startTime'];
+    $usuario = $result['Usuario'];
+
+    // 2. Calcular el tiempo total en minutos desde la primera parada hasta ahora.
+    $start_time_obj = new DateTime($startTime);
+    $end_time_obj = new DateTime(); // Fecha y hora actual para FechaFinalizacion
+    $interval = $start_time_obj->diff($end_time_obj);
+    $tiempoTotal = ($interval->days * 24 * 60) + ($interval->h * 60) + $interval->i;
+
+    // 3. Insertar el registro en la bitácora completa
+    $sql_insert = "INSERT INTO BitacoraCompleta (TiempoTotal, IdRuta, Usuario, FechaInicio, FechaFinalizacion) VALUES (?, ?, ?, ?, NOW())";
+    $stmt_insert = $conex->prepare($sql_insert);
+    if($stmt_insert === false) throw new Exception("Error al preparar la inserción final: " . $conex->error);
+
+    $stmt_insert->bind_param("isss", $tiempoTotal, $folioRuta, $usuario, $startTime);
+
+    if (!$stmt_insert->execute()) {
+        throw new Exception("Error al guardar la bitácora completa: " . $stmt_insert->error);
+    }
+
+    $response['data'] = ['tiempoTotal' => $tiempoTotal];
+    $response['success'] = true;
+    $response['message'] = 'Ruta completada y registrada.';
 
     $conex->commit();
-    $response['success'] = true;
-    $response['message'] = 'Bitácora completa guardada.';
-    $response['data'] = ['tiempoTotal' => $tiempoTotalMinutos];
+    $stmt_insert->close();
 
 } catch (Exception $e) {
-    if (isset($conex) && $conex->ping()) {
-        $conex->rollback();
-    }
+    if (isset($conex) && $conex->ping()) $conex->rollback();
     http_response_code(500);
     $response['message'] = 'Error del servidor: ' . $e->getMessage();
 } finally {
-    if (isset($conex) && $conex->ping()) {
-        $conex->close();
-    }
+    if (isset($conex) && $conex->ping()) $conex->close();
 }
 
 echo json_encode($response);
