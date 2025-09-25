@@ -155,7 +155,7 @@
             };
 
             try {
-                const response = await fetch('php/register_stop.php', {
+                const response = await fetch('https://grammermx.com/Logistica/RootKanBan/dao/register_stop.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dataToSend)
@@ -190,7 +190,7 @@
             }
 
             try {
-                const response = await fetch('php/complete_route.php', {
+                const response = await fetch('https://grammermx.com/Logistica/RootKanBan/dao/complete_route.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ folioRuta })
