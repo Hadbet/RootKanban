@@ -1,70 +1,45 @@
 <?php
 header('Content-Type: application/json');
-require_once 'db/db_Rutas.php';
+require_once 'db_Rutas.php';
 
-$response = ['success' => false, 'message' => '', 'data' => null];
-$data = json_decode(file_get_contents('php://input'), true);
-
-if (!$data || !isset($data['folioRuta'])) {
-    $response['message'] = 'Folio de ruta no proporcionado.';
-    echo json_encode($response);
-    exit;
-}
-
-$folioRuta = $data['folioRuta'];
+$response = ['success' => false, 'data' => [], 'message' => ''];
 
 try {
     $con = new LocalConector();
     $conex = $con->conectar();
-    $conex->begin_transaction();
 
-    // 1. Obtener la fecha de la primera parada (FechaInicio), la ruta y el usuario.
-    $sql_select = "SELECT MIN(Fecha) as startTime, Ruta, Usuario FROM BitacoraParadas WHERE FolioRuta = ? GROUP BY Ruta, Usuario";
-    $stmt_select = $conex->prepare($sql_select);
-    if($stmt_select === false) throw new Exception("Error al preparar la consulta de inicio: " . $conex->error);
+    // Esta es la consulta correcta para LEER el historial. No pide ningún folio.
+    $sql = "SELECT IdBitacoraCompleta, TiempoTotal, IdRuta, Usuario, FechaInicio, FechaFinalizacion 
+            FROM BitacoraCompleta 
+            ORDER BY FechaFinalizacion DESC 
+            LIMIT 50";
 
-    $stmt_select->bind_param("s", $folioRuta);
-    $stmt_select->execute();
-    $result = $stmt_select->get_result()->fetch_assoc();
-    $stmt_select->close();
-
-    if (!$result) {
-        throw new Exception("No se encontraron paradas para el folio: " . $folioRuta);
+    $stmt = $conex->prepare($sql);
+    if ($stmt === false) {
+        throw new Exception('Error al preparar la consulta: ' . $conex->error);
     }
 
-    $startTime = $result['startTime'];
-    $usuario = $result['Usuario'];
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-    // 2. Calcular el tiempo total en minutos desde la primera parada hasta ahora.
-    $start_time_obj = new DateTime($startTime);
-    $end_time_obj = new DateTime(); // Fecha y hora actual para FechaFinalizacion
-    $interval = $start_time_obj->diff($end_time_obj);
-    $tiempoTotal = ($interval->days * 24 * 60) + ($interval->h * 60) + $interval->i;
-
-    // 3. Insertar el registro en la bitácora completa
-    $sql_insert = "INSERT INTO BitacoraCompleta (TiempoTotal, IdRuta, Usuario, FechaInicio, FechaFinalizacion) VALUES (?, ?, ?, ?, NOW())";
-    $stmt_insert = $conex->prepare($sql_insert);
-    if($stmt_insert === false) throw new Exception("Error al preparar la inserción final: " . $conex->error);
-
-    $stmt_insert->bind_param("isss", $tiempoTotal, $folioRuta, $usuario, $startTime);
-
-    if (!$stmt_insert->execute()) {
-        throw new Exception("Error al guardar la bitácora completa: " . $stmt_insert->error);
+    $completedRoutes = [];
+    while ($row = $result->fetch_assoc()) {
+        $completedRoutes[] = $row;
     }
 
-    $response['data'] = ['tiempoTotal' => $tiempoTotal];
-    $response['success'] = true;
-    $response['message'] = 'Ruta completada y registrada.';
+    if (count($completedRoutes) > 0) {
+        $response['success'] = true;
+        $response['data'] = $completedRoutes;
+    } else {
+        $response['message'] = 'No se encontraron rutas en el historial.';
+    }
 
-    $conex->commit();
-    $stmt_insert->close();
+    $stmt->close();
+    $conex->close();
 
 } catch (Exception $e) {
-    if (isset($conex) && $conex->ping()) $conex->rollback();
     http_response_code(500);
     $response['message'] = 'Error del servidor: ' . $e->getMessage();
-} finally {
-    if (isset($conex) && $conex->ping()) $conex->close();
 }
 
 echo json_encode($response);
