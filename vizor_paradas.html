@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Ruta en Tiempo Real</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        #canvas-container {
+            aspect-ratio: 1920 / 861;
+        }
+        .truck-icon {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fb923c"><path d="M21.5,12.5h-1.81a4,4,0,0,0-3.86,2.94L14.36,20H4a2,2,0,0,1-2-2V7A2,2,0,0,1,4,5H14.36l1.47,4.56A4,4,0,0,0,19.69,11.5H21.5a1.5,1.5,0,0,1,0,3Z" opacity="0.4"/><path d="M14.36,5,13,9.16a4,4,0,0,1-3.86,2.84H3.5a1.5,1.5,0,0,1,0-3H9.14A4,4,0,0,1,13,5.16L14.36,1a1,1,0,0,1,1.1.13l3,2.5a1,1,0,0,1,0,1.5Z" opacity="0.4"/><path d="M19.69,14.5a4,4,0,0,1-3.86-2.94L14.36,7H4a2,2,0,0,0-2,2v9a2,2,0,0,0,2,2H14.36l1.47-4.56A4,4,0,0,1,19.69,14.5Z" fill="%23f97316"/><path d="M18.5,20a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,18.5,20Z" fill="%23fbbf24"/><path d="M6.5,20a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,6.5,20Z" fill="%23fbbf24"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            transition: all 1s ease-in-out;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-4 md:p-8">
+
+<div class="w-full max-w-7xl mx-auto">
+    <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 text-orange-400">Seguimiento de Ruta de Entrega</h1>
+
+    <!-- SECCIÓN DE RUTA ACTIVA -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div class="lg:col-span-2 bg-gray-800 p-4 rounded-xl shadow-2xl">
+            <h2 class="text-xl font-bold text-green-400 mb-2">Ruta en Progreso</h2>
+            <div id="canvas-container" class="relative w-full">
+                <canvas id="layout-canvas" class="block w-full h-full rounded-lg"></canvas>
+                <div id="truck" class="truck-icon" style="opacity: 0;"></div>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl flex flex-col">
+            <h2 class="text-xl font-bold text-green-400 mb-4 pb-2">Bitácora Activa</h2>
+            <div class="overflow-auto flex-grow">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-orange-300 uppercase bg-gray-700">
+                    <tr>
+                        <th scope="col" class="px-4 py-3">Parada</th>
+                        <th scope="col" class="px-4 py-3">Usuario</th>
+                        <th scope="col" class="px-4 py-3">Fecha y Hora</th>
+                    </tr>
+                    </thead>
+                    <tbody id="bitacora-body"></tbody>
+                </table>
+            </div>
+            <div id="loading-active" class="mt-4 text-center text-gray-400">Cargando datos de ruta activa...</div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN DE HISTORIAL DE RUTAS -->
+    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl">
+        <h2 class="text-2xl font-bold mb-4 border-b-2 border-orange-500 pb-2">Historial de Rutas Completadas</h2>
+        <div class="overflow-auto max-h-96">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-orange-300 uppercase bg-gray-700 sticky top-0">
+                <tr>
+                    <th scope="col" class="px-4 py-3">Ruta ID</th>
+                    <th scope="col" class="px-4 py-3">Usuario</th>
+                    <th scope="col" class="px-4 py-3">Tiempo Total (min)</th>
+                    <th scope="col" class="px-4 py-3">Fecha de Finalización</th>
+                </tr>
+                </thead>
+                <tbody id="historial-body">
+                <!-- Filas del historial -->
+                </tbody>
+            </table>
+            <div id="loading-history" class="mt-4 text-center text-gray-400">Cargando historial...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Canvas y elementos de la ruta activa
+        const canvas = document.getElementById('layout-canvas');
+        const ctx = canvas.getContext('2d');
+        const truckElement = document.getElementById('truck');
+        const bitacoraBody = document.getElementById('bitacora-body');
+        const loadingActive = document.getElementById('loading-active');
+
+        // Elementos del historial
+        const historialBody = document.getElementById('historial-body');
+        const loadingHistory = document.getElementById('loading-history');
+
+        const ALL_STOPS_ROUTE_1 = [
+            { x: 1200, y: 250 }, { x: 560, y: 250 }, { x: 560, y: 305 },
+            { x: 700, y: 305 }, { x: 800, y: 305 }, { x: 1200, y: 305 }
+        ];
+
+        const image = new Image();
+        image.src = 'https://placehold.co/1920x861/1f2937/9ca3af?text=Layout+de+Planta';
+
+        image.onload = () => {
+            canvas.width = image.naturalWidth;
+            canvas.height = image.naturalHeight;
+
+            // Carga inicial
+            fetchActiveRouteData();
+            fetchCompletedRoutes();
+
+            // Actualizaciones periódicas
+            setInterval(fetchActiveRouteData, 5000); // Ruta activa se revisa frecuentemente
+            setInterval(fetchCompletedRoutes, 15000); // Historial se revisa con menos frecuencia
+        };
+
+        image.onerror = () => {
+            console.error("No se pudo cargar la imagen de fondo.");
+            // Dibujar un mensaje de error en el canvas
+        };
+
+        // --- LÓGICA PARA LA RUTA ACTIVA ---
+        async function fetchActiveRouteData() {
+            try {
+                const response = await fetch('https://grammermx.com/Logistica/RootKanBan/dao/get_stops.php?ruta=1');
+                const result = await response.json();
+
+                if (result.success && result.data.length > 0) {
+                    loadingActive.style.display = 'none';
+                    redrawCanvas(result.data);
+                    updateActiveTable(result.data);
+                } else {
+                    loadingActive.textContent = 'Esperando una nueva ruta...';
+                    redrawCanvas([]); // Dibuja el canvas vacío
+                    updateActiveTable([]);
+                }
+            } catch (error) {
+                console.error("Error en ruta activa:", error);
+                loadingActive.textContent = 'Error de conexión.';
+            }
+        }
+
+        function redrawCanvas(completedStops) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(image, 0, 0);
+
+            ctx.strokeStyle = 'rgba(107, 114, 128, 0.5)';
+            ctx.lineWidth = 10;
+            ctx.beginPath();
+            ctx.moveTo(ALL_STOPS_ROUTE_1[0].x, ALL_STOPS_ROUTE_1[0].y);
+            for (let i = 1; i < ALL_STOPS_ROUTE_1.length; i++) {
+                ctx.lineTo(ALL_STOPS_ROUTE_1[i].x, ALL_STOPS_ROUTE_1[i].y);
+            }
+            ctx.stroke();
+
+            if (completedStops.length === 0) {
+                updateTruckPosition(-1);
+                return;
+            }
+
+            ctx.strokeStyle = '#f97316';
+            ctx.lineWidth = 12;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(ALL_STOPS_ROUTE_1[parseInt(completedStops[0].Parada) - 1].x, ALL_STOPS_ROUTE_1[parseInt(completedStops[0].Parada) - 1].y);
+            completedStops.forEach(stopData => {
+                const point = ALL_STOPS_ROUTE_1[parseInt(stopData.Parada) - 1];
+                ctx.lineTo(point.x, point.y);
+            });
+            ctx.stroke();
+
+            completedStops.forEach(stopData => {
+                const point = ALL_STOPS_ROUTE_1[parseInt(stopData.Parada) - 1];
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 12, 0, 2 * Math.PI);
+                ctx.fillStyle = '#fb923c';
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            });
+
+            const lastStopIndex = Math.max(...completedStops.map(s => parseInt(s.Parada))) - 1;
+            updateTruckPosition(lastStopIndex);
+        }
+
+        function updateTruckPosition(lastStopIndex) {
+            if (lastStopIndex < 0) {
+                truckElement.style.opacity = '0';
+                return;
+            }
+            const point = ALL_STOPS_ROUTE_1[lastStopIndex];
+            const canvasRect = canvas.getBoundingClientRect();
+            const scaleX = canvasRect.width / canvas.width;
+            const scaleY = canvasRect.height / canvas.height;
+            truckElement.style.left = `${point.x * scaleX}px`;
+            truckElement.style.top = `${point.y * scaleY}px`;
+            truckElement.style.opacity = '1';
+        }
+
+        function updateActiveTable(stops) {
+            bitacoraBody.innerHTML = '';
+            if (stops.length === 0) {
+                bitacoraBody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-gray-400">No hay ruta activa.</td></tr>`;
+                return;
+            }
+            stops.sort((a, b) => parseInt(a.Parada) - parseInt(b.Parada));
+            stops.forEach(stop => {
+                const row = document.createElement('tr');
+                row.className = 'bg-gray-800 border-b border-gray-700 hover:bg-gray-600';
+                row.innerHTML = `
+                <td class="px-4 py-3 font-medium text-white">Parada ${stop.Parada}</td>
+                <td class="px-4 py-3">${stop.Usuario}</td>
+                <td class="px-4 py-3">${new Date(stop.Fecha).toLocaleString('es-MX')}</td>
+            `;
+                bitacoraBody.appendChild(row);
+            });
+        }
+
+        // --- LÓGICA PARA EL HISTORIAL DE RUTAS ---
+        async function fetchCompletedRoutes() {
+            try {
+                const response = await fetch('https://grammermx.com/Logistica/RootKanBan/dao/get_completed_routes.php');
+                const result = await response.json();
+
+                if(result.success && result.data.length > 0) {
+                    loadingHistory.style.display = 'none';
+                    updateHistoryTable(result.data);
+                } else {
+                    loadingHistory.textContent = 'No hay rutas completadas en el historial.';
+                }
+            } catch (error) {
+                console.error("Error en historial:", error);
+                loadingHistory.textContent = 'Error de conexión.';
+            }
+        }
+
+        function updateHistoryTable(routes) {
+            historialBody.innerHTML = '';
+            routes.forEach(route => {
+                const row = document.createElement('tr');
+                row.className = 'bg-gray-800 border-b border-gray-700 hover:bg-gray-600';
+                // Suponiendo que la tabla BitacoraCompleta tiene un campo de fecha, si no lo tiene, se puede omitir.
+                // Aquí usaré IdBitacoraCompleta como ejemplo, idealmente sería una fecha.
+                row.innerHTML = `
+                <td class="px-4 py-3 font-medium text-white">${route.IdRuta}</td>
+                <td class="px-4 py-3">${route.Usuario}</td>
+                <td class="px-4 py-3">${route.TiempoTotal} min</td>
+                <td class="px-4 py-3">${route.FechaFinalizacion ? new Date(route.FechaFinalizacion).toLocaleString('es-MX') : 'N/A'}</td>
+            `;
+                historialBody.appendChild(row);
+            });
+        }
+    });
+</script>
+</body>
+</html>
+

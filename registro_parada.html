@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Parada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        #qr-reader { border: 4px dashed #fb923c; border-radius: 1rem; }
+        #truck-animation {
+            position: fixed;
+            bottom: 20px;
+            left: -150px; /* Inicia fuera de la pantalla */
+            width: 120px;
+            height: 120px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fb923c"><path d="M21.5,12.5h-1.81a4,4,0,0,0-3.86,2.94L14.36,20H4a2,2,0,0,1-2-2V7A2,2,0,0,1,4,5H14.36l1.47,4.56A4,4,0,0,0,19.69,11.5H21.5a1.5,1.5,0,0,1,0,3Z" /><path d="M14.36,5,13,9.16a4,4,0,0,1-3.86,2.84H3.5a1.5,1.5,0,0,1,0-3H9.14A4,4,0,0,1,13,5.16L14.36,1a1,1,0,0,1,1.1.13l3,2.5a1,1,0,0,1,0,1.5Z" /><path d="M19.69,14.5a4,4,0,0,1-3.86-2.94L14.36,7H4a2,2,0,0,0-2,2v9a2,2,0,0,0,2,2H14.36l1.47-4.56A4,4,0,0,1,19.69,14.5Z" /><path d="M18.5,20a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,18.5,20Z"/><path d="M6.5,20a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,6.5,20Z"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            transition: left 2s ease-in-out;
+            z-index: 50;
+        }
+        .drive { left: calc(100vw + 150px); /* Termina fuera de la pantalla */ }
+    </style>
+</head>
+<body class="bg-gray-800 text-white flex flex-col items-center justify-center min-h-screen p-4">
+
+<div id="truck-animation"></div>
+
+<div id="main-container" class="w-full max-w-md bg-gray-900 p-8 rounded-2xl shadow-2xl">
+
+    <!-- Estado inicial: Escanear QR -->
+    <div id="scan-view">
+        <h1 class="text-3xl font-bold text-center text-orange-400 mb-2">Registrar Parada</h1>
+        <p class="text-center text-gray-400 mb-6">Apunta la cámara al código QR de la estación.</p>
+        <div id="qr-reader" class="w-full"></div>
+    </div>
+
+    <!-- Estado de confirmación -->
+    <div id="confirm-view" class="hidden">
+        <h2 class="text-3xl font-bold text-center text-orange-400">Parada <span id="parada-numero"></span></h2>
+        <p class="text-center text-gray-400 mb-6">Ruta <span id="ruta-numero"></span></p>
+
+        <form id="stop-form">
+            <label for="comentarios" class="block mb-2 text-sm font-medium text-gray-300">Comentarios (Opcional)</label>
+            <textarea id="comentarios" rows="3" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5" placeholder="Añade una nota..."></textarea>
+
+            <button type="submit" class="w-full mt-6 text-white bg-orange-600 hover:bg-orange-700 focus:ring-4 focus:outline-none focus:ring-orange-500 font-medium rounded-lg text-lg px-5 py-3 text-center">
+                Confirmar Registro
+            </button>
+            <button type="button" id="cancel-scan" class="w-full mt-3 text-gray-400 hover:text-white hover:bg-gray-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                Volver a Escanear
+            </button>
+        </form>
+    </div>
+
+    <!-- Estado final de la ruta -->
+    <div id="complete-view" class="hidden text-center">
+        <h2 class="text-3xl font-bold text-green-400 mb-4">¡Ruta Finalizada!</h2>
+        <p class="text-gray-300 mb-6">Todas las paradas de la ruta han sido registradas. Presiona el botón para completar la bitácora.</p>
+        <button id="finish-route-btn" class="w-full text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-500 font-medium rounded-lg text-lg px-5 py-3">
+            Finalizar y Guardar Tiempo
+        </button>
+    </div>
+
+</div>
+
+<!-- Modal de notificación -->
+<div id="notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-5 rounded-lg shadow-lg opacity-0 transition-opacity duration-300">
+    <p id="notification-message"></p>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const scanView = document.getElementById('scan-view');
+        const confirmView = document.getElementById('confirm-view');
+        const completeView = document.getElementById('complete-view');
+        const stopForm = document.getElementById('stop-form');
+        const cancelScanBtn = document.getElementById('cancel-scan');
+        const finishRouteBtn = document.getElementById('finish-route-btn');
+        const notification = document.getElementById('notification');
+        const notificationMessage = document.getElementById('notification-message');
+        const truck = document.getElementById('truck-animation');
+
+        let qrData = null; // { ruta: '1', parada: '1' }
+        const TOTAL_STOPS_ROUTE_1 = 6;
+
+        // Configuración del escaner QR
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        const startScanner = () => {
+            scanView.classList.remove('hidden');
+            confirmView.classList.add('hidden');
+            completeView.classList.add('hidden');
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                onScanSuccess,
+                onScanFailure
+            ).catch(err => {
+                console.error("No se pudo iniciar el escaner", err);
+                alert("Error al iniciar la cámara. Asegúrate de dar permisos.");
+            });
+        };
+
+        const stopScanner = () => {
+            html5QrCode.stop().catch(err => console.log("El escaner ya estaba detenido."));
+        };
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // Ejemplo de QR: "1Parada", "2Parada", etc.
+            const match = decodedText.match(/^(\d+)Parada$/);
+            if (match) {
+                stopScanner();
+                qrData = {
+                    // Por ahora, la ruta es siempre 1. Se puede mejorar para que el QR la incluya.
+                    ruta: '1',
+                    parada: match[1]
+                };
+                document.getElementById('ruta-numero').textContent = qrData.ruta;
+                document.getElementById('parada-numero').textContent = qrData.parada;
+                scanView.classList.add('hidden');
+                confirmView.classList.remove('hidden');
+            } else {
+                showNotification(`Código QR no válido: ${decodedText}`, 'error');
+            }
+        }
+
+        function onScanFailure(error) {
+            // No hacer nada, es normal que falle hasta que encuentre un QR
+        }
+
+        cancelScanBtn.addEventListener('click', startScanner);
+
+        stopForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const comentarios = document.getElementById('comentarios').value;
+            let folioRuta = sessionStorage.getItem('folioRuta');
+
+            if (!folioRuta && qrData.parada === '1') {
+                folioRuta = `FR-${Date.now()}`;
+                sessionStorage.setItem('folioRuta', folioRuta);
+            } else if (!folioRuta) {
+                alert("Error: Debes escanear la parada 1 para iniciar una nueva ruta.");
+                return;
+            }
+
+            const dataToSend = {
+                ...qrData,
+                comentarios,
+                folioRuta,
+                usuario: 'Hadbet', // Usuario fijo
+                totalStops: TOTAL_STOPS_ROUTE_1
+            };
+
+            try {
+                const response = await fetch('php/register_stop.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataToSend)
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification(`Parada ${qrData.parada} registrada con éxito`, 'success');
+                    animateTruck();
+                    document.getElementById('comentarios').value = '';
+
+                    if (result.routeFinished) {
+                        confirmView.classList.add('hidden');
+                        completeView.classList.remove('hidden');
+                    } else {
+                        startScanner();
+                    }
+                } else {
+                    throw new Error(result.message || 'Error desconocido al registrar.');
+                }
+            } catch (error) {
+                console.error('Error en el registro:', error);
+                showNotification(error.message, 'error');
+            }
+        });
+
+        finishRouteBtn.addEventListener('click', async () => {
+            const folioRuta = sessionStorage.getItem('folioRuta');
+            if (!folioRuta) {
+                alert("No se encontró Folio de Ruta para finalizar.");
+                return;
+            }
+
+            try {
+                const response = await fetch('php/complete_route.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ folioRuta })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification(`Ruta completada en ${result.data.tiempoTotal} minutos.`, 'success');
+                    sessionStorage.removeItem('folioRuta');
+                    setTimeout(() => {
+                        completeView.classList.add('hidden');
+                        startScanner();
+                    }, 3000);
+                } else {
+                    throw new Error(result.message || 'Error al finalizar la ruta.');
+                }
+
+            } catch (error) {
+                console.error('Error al finalizar:', error);
+                showNotification(error.message, 'error');
+            }
+        });
+
+        function showNotification(message, type = 'success') {
+            notificationMessage.textContent = message;
+            notification.classList.remove('bg-green-500', 'bg-red-500');
+            notification.classList.add(type === 'success' ? 'bg-green-500' : 'bg-red-500');
+            notification.classList.remove('opacity-0');
+            setTimeout(() => {
+                notification.classList.add('opacity-0');
+            }, 3000);
+        }
+
+        function animateTruck() {
+            truck.classList.add('drive');
+            setTimeout(() => {
+                truck.classList.remove('drive');
+            }, 2500); // El tiempo debe ser mayor a la duración de la transición
+        }
+
+        // Iniciar el proceso
+        startScanner();
+    });
+</script>
+</body>
+</html>
