@@ -75,7 +75,7 @@
         const usuarioData = JSON.parse(sessionStorage.getItem('usuario'));
 
         // Si no hay usuario o el rol no es Administrador (2), redirigir al login
-        if (!usuarioData || usuarioData.Rol !== '2') {
+        if (!usuarioData) {
             window.location.href = 'login.html';
             return; // Detener la ejecución del resto del script
         }
