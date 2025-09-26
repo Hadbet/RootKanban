@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- SEGURIDAD Y SESIÓN ---
     const usuarioData = JSON.parse(sessionStorage.getItem('usuario'));
-    if (!usuarioData || usuarioData.Rol !== '2') {
+    if (!usuarioData || usuarioData.Rol !== 2) {
         window.location.href = 'login.html';
         return;
     }
