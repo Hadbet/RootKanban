@@ -75,9 +75,9 @@
                 sessionStorage.setItem('usuario', JSON.stringify(result.data));
 
                 // Redirigir según el rol
-                if (result.data.Rol === '2') { // Administrador
+                if (result.data.Rol === 2) { // Administrador
                     window.location.href = 'vizor_paradas.html';
-                } else if (result.data.Rol === '1') { // Conductor
+                } else if (result.data.Rol === 1) { // Conductor
                     window.location.href = 'registro_parada.html';
                 } else {
                     errorMessage.textContent = 'Rol de usuario no reconocido.';
