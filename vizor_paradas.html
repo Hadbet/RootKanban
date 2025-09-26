@@ -6,92 +6,113 @@
     <title>Visualizador de Ruta en Tiempo Real</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        #canvas-container {
-            aspect-ratio: 1920 / 861;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        #canvas-container { aspect-ratio: 1920 / 861; }
         .truck-icon {
-            position: absolute;
-            width: 50px;
-            height: 50px;
+            position: absolute; width: 50px; height: 50px;
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fb923c"><path d="M21.5,12.5h-1.81a4,4,0,0,0-3.86,2.94L14.36,20H4a2,2,0,0,1-2-2V7A2,2,0,0,1,4,5H14.36l1.47,4.56A4,4,0,0,0,19.69,11.5H21.5a1.5,1.5,0,0,1,0,3Z" opacity="0.4"/><path d="M14.36,5,13,9.16a4,4,0,0,1-3.86,2.84H3.5a1.5,1.5,0,0,1,0-3H9.14A4,4,0,0,1,13,5.16L14.36,1a1,1,0,0,1,1.1.13l3,2.5a1,1,0,0,1,0,1.5Z" opacity="0.4"/><path d="M19.69,14.5a4,4,0,0,1-3.86-2.94L14.36,7H4a2,2,0,0,0-2,2v9a2,2,0,0,0,2,2H14.36l1.47-4.56A4,4,0,0,1,19.69,14.5Z" fill="%23f97316"/><path d="M18.5,20a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,18.5,20Z" fill="%23fbbf24"/><path d="M6.5,20a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,6.5,20Z" fill="%23fbbf24"/></svg>');
-            background-size: contain;
-            background-repeat: no-repeat;
-            transition: all 1s ease-in-out;
-            transform: translate(-50%, -50%);
+            background-size: contain; background-repeat: no-repeat;
+            transition: all 1s ease-in-out; transform: translate(-50%, -50%);
         }
     </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen p-4 md:p-8">
+<body class="bg-gray-900 text-white min-h-screen">
 
-<div class="w-full max-w-7xl mx-auto">
-    <center><img src="Grammer_Logo_Original_White_sRGB_screen_transparent.png" width="200"></center>
-    <br><br>
-    <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 text-orange-400">Seguimiento de Ruta de Entrega</h1>
-
-    <!-- SECCIÓN DE RUTA ACTIVA -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div class="lg:col-span-2 bg-gray-800 p-4 rounded-xl shadow-2xl">
-            <h2 class="text-xl font-bold text-green-400 mb-2">Ruta en Progreso</h2>
-            <div id="canvas-container" class="relative w-full">
-                <canvas id="layout-canvas" class="block w-full h-full rounded-lg"></canvas>
-                <div id="truck" class="truck-icon" style="opacity: 0;"></div>
+<!-- BARRA DE NAVEGACIÓN -->
+<nav class="bg-gray-800 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between items-center h-16">
+            <div class="flex-shrink-0">
+                <img src="https://placehold.co/150x50/1f2937/white?text=Tu+Logo" alt="Logo" class="h-10">
+            </div>
+            <div class="hidden md:block">
+                <div class="ml-10 flex items-baseline space-x-4">
+                    <a href="visor.html" class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium">Inicio</a>
+                    <a href="usuarios.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Usuarios</a>
+                </div>
+            </div>
+            <div class="flex items-center">
+                <span class="text-gray-400 text-sm mr-4">Hola, <span id="user-name"></span></span>
+                <button id="logout-btn" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Salir</button>
             </div>
         </div>
+    </div>
+</nav>
 
-        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl flex flex-col">
-            <h2 class="text-xl font-bold text-green-400 mb-4 pb-2">Bitácora Activa</h2>
-            <div class="overflow-auto flex-grow">
+<main class="p-4 md:p-8">
+    <div class="w-full max-w-7xl mx-auto">
+        <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 text-orange-400">Seguimiento de Ruta de Entrega</h1>
+        <!-- El resto del contenido del visor permanece igual -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="lg:col-span-2 bg-gray-800 p-4 rounded-xl shadow-2xl">
+                <h2 class="text-xl font-bold text-green-400 mb-2">Ruta en Progreso</h2>
+                <div id="canvas-container" class="relative w-full">
+                    <canvas id="layout-canvas" class="block w-full h-full rounded-lg"></canvas>
+                    <div id="truck" class="truck-icon" style="opacity: 0;"></div>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-6 rounded-xl shadow-2xl flex flex-col">
+                <h2 class="text-xl font-bold text-green-400 mb-4 pb-2">Bitácora Activa</h2>
+                <div class="overflow-auto flex-grow">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-orange-300 uppercase bg-gray-700">
+                        <tr>
+                            <th scope="col" class="px-4 py-3">Parada</th>
+                            <th scope="col" class="px-4 py-3">Usuario</th>
+                            <th scope="col" class="px-4 py-3">Fecha y Hora</th>
+                        </tr>
+                        </thead>
+                        <tbody id="bitacora-body"></tbody>
+                    </table>
+                </div>
+                <div id="loading-active" class="mt-4 text-center text-gray-400">Cargando datos...</div>
+            </div>
+        </div>
+        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl">
+            <h2 class="text-2xl font-bold mb-4 border-b-2 border-orange-500 pb-2">Historial de Rutas Completadas</h2>
+            <div class="overflow-auto max-h-96">
                 <table class="w-full text-sm text-left">
-                    <thead class="text-xs text-orange-300 uppercase bg-gray-700">
+                    <thead class="text-xs text-orange-300 uppercase bg-gray-700 sticky top-0">
                     <tr>
-                        <th scope="col" class="px-4 py-3">Parada</th>
+                        <th scope="col" class="px-4 py-3">Folio Ruta</th>
                         <th scope="col" class="px-4 py-3">Usuario</th>
-                        <th scope="col" class="px-4 py-3">Fecha y Hora</th>
+                        <th scope="col" class="px-4 py-3">Duración (min)</th>
+                        <th scope="col" class="px-4 py-3">Fecha Inicio</th>
+                        <th scope="col" class="px-4 py-3">Fecha Fin</th>
                     </tr>
                     </thead>
-                    <tbody id="bitacora-body"></tbody>
+                    <tbody id="historial-body"></tbody>
                 </table>
+                <div id="loading-history" class="mt-4 text-center text-gray-400">Cargando historial...</div>
             </div>
-            <div id="loading-active" class="mt-4 text-center text-gray-400">Cargando datos de ruta activa...</div>
         </div>
     </div>
-
-    <!-- SECCIÓN DE HISTORIAL DE RUTAS -->
-    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl">
-        <h2 class="text-2xl font-bold mb-4 border-b-2 border-orange-500 pb-2">Historial de Rutas Completadas</h2>
-        <div class="overflow-auto max-h-96">
-            <table class="w-full text-sm text-left">
-                <thead class="text-xs text-orange-300 uppercase bg-gray-700 sticky top-0">
-                <tr>
-                    <th scope="col" class="px-4 py-3">Folio Ruta</th>
-                    <th scope="col" class="px-4 py-3">Usuario</th>
-                    <th scope="col" class="px-4 py-3">Duración (min)</th>
-                    <th scope="col" class="px-4 py-3">Fecha Inicio</th>
-                    <th scope="col" class="px-4 py-3">Fecha Fin</th>
-                </tr>
-                </thead>
-                <tbody id="historial-body">
-                <!-- Filas del historial -->
-                </tbody>
-            </table>
-            <div id="loading-history" class="mt-4 text-center text-gray-400">Cargando historial...</div>
-        </div>
-    </div>
-</div>
+</main>
 
 <script>
+    // --- SCRIPT DE SEGURIDAD Y SESIÓN ---
     document.addEventListener('DOMContentLoaded', () => {
-        // Canvas y elementos de la ruta activa
+        const usuarioData = JSON.parse(sessionStorage.getItem('usuario'));
+
+        // Si no hay usuario o el rol no es Administrador (2), redirigir al login
+        if (!usuarioData || usuarioData.Rol !== '2') {
+            window.location.href = 'login.html';
+            return; // Detener la ejecución del resto del script
+        }
+
+        document.getElementById('user-name').textContent = usuarioData.Nombre;
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            sessionStorage.removeItem('usuario');
+            window.location.href = 'login.html';
+        });
+
+        // --- EL RESTO DE TU SCRIPT DEL VISOR VA AQUÍ ---
         const canvas = document.getElementById('layout-canvas');
         const ctx = canvas.getContext('2d');
         const truckElement = document.getElementById('truck');
         const bitacoraBody = document.getElementById('bitacora-body');
         const loadingActive = document.getElementById('loading-active');
-
-        // Elementos del historial
         const historialBody = document.getElementById('historial-body');
         const loadingHistory = document.getElementById('loading-history');
 
@@ -101,7 +122,7 @@
         ];
 
         const image = new Image();
-        image.src = 'layout.jpg';
+        image.src = 'layout.jpg'; // Asegúrate que esta imagen exista
 
         image.onload = () => {
             canvas.width = image.naturalWidth;
@@ -175,8 +196,7 @@
 
         function updateTruckPosition(lastStopIndex) {
             if (lastStopIndex < 0) {
-                truckElement.style.opacity = '0';
-                return;
+                truckElement.style.opacity = '0'; return;
             }
             const point = ALL_STOPS_ROUTE_1[lastStopIndex];
             const canvasRect = canvas.getBoundingClientRect();
@@ -210,7 +230,7 @@
                     loadingHistory.style.display = 'none';
                     updateHistoryTable(result.data);
                 } else {
-                    loadingHistory.textContent = 'No hay rutas completadas en el historial.';
+                    loadingHistory.textContent = 'No hay rutas completadas.';
                 }
             } catch (error) {
                 console.error("Error en historial:", error);

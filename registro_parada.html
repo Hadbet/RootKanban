@@ -71,6 +71,22 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+
+        const usuarioData = JSON.parse(sessionStorage.getItem('usuario'));
+
+        // Si no hay usuario o el rol no es Administrador (2), redirigir al login
+        if (!usuarioData || usuarioData.Rol !== '2') {
+            window.location.href = 'login.html';
+            return; // Detener la ejecución del resto del script
+        }
+
+        document.getElementById('user-name').textContent = usuarioData.Nombre;
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            sessionStorage.removeItem('usuario');
+            window.location.href = 'login.html';
+        });
+
         const scanView = document.getElementById('scan-view');
         const confirmView = document.getElementById('confirm-view');
         const completeView = document.getElementById('complete-view');
@@ -148,7 +164,7 @@
                 ...qrData,
                 comentarios,
                 folioRuta,
-                usuario: '1606', // Usuario fijo
+                usuario: usuarioData.IdUsuarios, // Usuario fijo
                 totalStops: TOTAL_STOPS_ROUTE_1
             };
 
