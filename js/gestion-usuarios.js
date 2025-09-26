@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- SEGURIDAD Y SESIÓN ---
+
+    /*
     const usuarioData = JSON.parse(sessionStorage.getItem('usuario'));
     if (!usuarioData || usuarioData.Rol !== '2') {
         window.location.href = 'login.html';
@@ -9,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('logout-btn').addEventListener('click', () => {
         sessionStorage.removeItem('usuario');
         window.location.href = 'login.html';
-    });
+    });*/
 
     // --- ELEMENTOS DEL DOM ---
     const userForm = document.getElementById('user-form');
