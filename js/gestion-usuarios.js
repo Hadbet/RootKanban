@@ -1,7 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- SEGURIDAD Y SESIÓN ---
-
-    /*
     const usuarioData = JSON.parse(sessionStorage.getItem('usuario'));
     if (!usuarioData || usuarioData.Rol !== '2') {
         window.location.href = 'login.html';
@@ -11,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('logout-btn').addEventListener('click', () => {
         sessionStorage.removeItem('usuario');
         window.location.href = 'login.html';
-    });*/
+    });
 
     // --- ELEMENTOS DEL DOM ---
     const userForm = document.getElementById('user-form');
@@ -28,7 +26,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result.success) {
                 renderUsers(result.data);
             } else {
-                alert('Error al cargar usuarios: ' + result.message);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al Cargar',
+                    text: result.message,
+                    background: '#1f2937',
+                    color: '#ffffff'
+                });
             }
         } catch (error) {
             console.error('Error de conexión:', error);
@@ -45,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="px-4 py-3">${user.Nombre}</td>
                 <td class="px-4 py-3">${user.Rol === '1' ? 'Conductor' : 'Administrador'}</td>
                 <td class="px-4 py-3">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.Estatus === '1' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.Estatus === '1' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}">
                         ${user.Estatus === '1' ? 'Activo' : 'Inactivo'}
                     </span>
                 </td>
@@ -70,34 +74,79 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('https://grammermx.com/Logistica/RootKanBan/dao/manage_users.php', { method: 'POST', body: formData });
             const result = await response.json();
             if (result.success) {
-                alert('Usuario creado con éxito.');
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: 'Usuario creado correctamente.',
+                    background: '#1f2937',
+                    color: '#ffffff',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
                 userForm.reset();
                 fetchUsers();
             } else {
-                alert('Error: ' + result.message);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: result.message,
+                    background: '#1f2937',
+                    color: '#ffffff'
+                });
             }
         } catch (error) {
             console.error('Error:', error);
         }
     });
 
-    usersTableBody.addEventListener('click', async (e) => {
+    usersTableBody.addEventListener('click', (e) => {
         // Botón para cambiar estatus
         if (e.target.classList.contains('toggle-status-btn')) {
             const id = e.target.dataset.id;
             const currentStatus = e.target.dataset.status;
             const newStatus = currentStatus === '1' ? '0' : '1';
+            const actionText = newStatus === '1' ? 'activar' : 'inactivar';
 
-            if (confirm(`¿Seguro que quieres ${newStatus === '1' ? 'activar' : 'inactivar'} a este usuario?`)) {
-                const formData = new FormData();
-                formData.append('action', 'toggle_status');
-                formData.append('IdUsuarios', id);
-                formData.append('Estatus', newStatus);
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: `¿Quieres ${actionText} a este usuario?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: `Sí, ${actionText}`,
+                cancelButtonText: 'No, cancelar',
+                background: '#1f2937',
+                color: '#ffffff'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const formData = new FormData();
+                    formData.append('action', 'toggle_status');
+                    formData.append('IdUsuarios', id);
+                    formData.append('Estatus', newStatus);
 
-                const response = await fetch('https://grammermx.com/Logistica/RootKanBan/dao/manage_users.php', { method: 'POST', body: formData });
-                const result = await response.json();
-                if (result.success) fetchUsers(); else alert(result.message);
-            }
+                    const response = await fetch('https://grammermx.com/Logistica/RootKanBan/dao/manage_users.php', { method: 'POST', body: formData });
+                    const res = await response.json();
+                    if (res.success) {
+                        fetchUsers();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Actualizado',
+                            text: `El usuario ha sido ${actionText}do.`,
+                            background: '#1f2937',
+                            color: '#ffffff'
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: res.message,
+                            background: '#1f2937',
+                            color: '#ffffff'
+                        });
+                    }
+                }
+            });
         }
         // Botón para editar
         if (e.target.classList.contains('edit-btn')) {
@@ -121,14 +170,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const result = await response.json();
 
         if (result.success) {
-            alert('Usuario actualizado.');
             editModal.classList.add('hidden');
             fetchUsers();
+            Swal.fire({
+                icon: 'success',
+                title: 'Usuario Actualizado',
+                background: '#1f2937',
+                color: '#ffffff',
+                timer: 2000,
+                showConfirmButton: false
+            });
         } else {
-            alert('Error: ' + result.message);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: result.message,
+                background: '#1f2937',
+                color: '#ffffff'
+            });
         }
     });
 
     // Carga inicial
     fetchUsers();
 });
+

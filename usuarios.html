@@ -5,7 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Usuarios</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style> body { font-family: 'Inter', sans-serif; } </style>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Estilos mejorados para los inputs */
+        .form-input {
+            background-color: #374151; /* bg-gray-700 */
+            border: 2px solid #4b5563; /* border-gray-600 */
+            color: #ffffff;
+            transition: all 0.3s ease-in-out;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #f97316; /* border-orange-500 */
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.3);
+        }
+    </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
 
@@ -40,29 +58,29 @@
                 <h2 class="text-2xl font-bold mb-4 text-green-400">Crear Nuevo Usuario</h2>
                 <form id="user-form" class="space-y-4">
                     <div>
-                        <label for="IdUsuarios" class="block text-sm font-medium">ID / Nómina</label>
-                        <input type="text" id="IdUsuarios" name="IdUsuarios" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500">
+                        <label for="IdUsuarios" class="block text-sm font-medium mb-1">ID / Nómina</label>
+                        <input type="text" id="IdUsuarios" name="IdUsuarios" required class="form-input w-full">
                     </div>
                     <div>
-                        <label for="Nombre" class="block text-sm font-medium">Nombre Completo</label>
-                        <input type="text" id="Nombre" name="Nombre" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500">
+                        <label for="Nombre" class="block text-sm font-medium mb-1">Nombre Completo</label>
+                        <input type="text" id="Nombre" name="Nombre" required class="form-input w-full">
                     </div>
                     <div>
-                        <label for="Correo" class="block text-sm font-medium">Correo</label>
-                        <input type="email" id="Correo" name="Correo" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500">
+                        <label for="Correo" class="block text-sm font-medium mb-1">Correo</label>
+                        <input type="email" id="Correo" name="Correo" required class="form-input w-full">
                     </div>
                     <div>
-                        <label for="Password" class="block text-sm font-medium">Contraseña</label>
-                        <input type="password" id="Password" name="Password" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500">
+                        <label for="Password" class="block text-sm font-medium mb-1">Contraseña</label>
+                        <input type="password" id="Password" name="Password" required class="form-input w-full">
                     </div>
                     <div>
-                        <label for="Rol" class="block text-sm font-medium">Rol</label>
-                        <select id="Rol" name="Rol" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500">
+                        <label for="Rol" class="block text-sm font-medium mb-1">Rol</label>
+                        <select id="Rol" name="Rol" required class="form-input w-full">
                             <option value="1">Conductor</option>
                             <option value="2">Administrador</option>
                         </select>
                     </div>
-                    <button type="submit" class="w-full mt-6 text-white bg-orange-600 hover:bg-orange-700 font-medium rounded-lg text-lg px-5 py-3 text-center">
+                    <button type="submit" class="w-full mt-6 text-white bg-orange-600 hover:bg-orange-700 font-medium rounded-lg text-lg px-5 py-3 text-center transition-transform transform hover:scale-105">
                         Guardar Usuario
                     </button>
                 </form>
@@ -99,16 +117,16 @@
         <form id="edit-user-form" class="space-y-4">
             <input type="hidden" id="edit-IdUsuarios" name="IdUsuarios">
             <div>
-                <label for="edit-Correo" class="block text-sm font-medium">Correo</label>
-                <input type="email" id="edit-Correo" name="Correo" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md">
+                <label for="edit-Correo" class="block text-sm font-medium mb-1">Correo</label>
+                <input type="email" id="edit-Correo" name="Correo" required class="form-input w-full">
             </div>
             <div>
-                <label for="edit-Password" class="block text-sm font-medium">Nueva Contraseña (dejar en blanco para no cambiar)</label>
-                <input type="password" id="edit-Password" name="Password" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md">
+                <label for="edit-Password" class="block text-sm font-medium mb-1">Nueva Contraseña (dejar en blanco para no cambiar)</label>
+                <input type="password" id="edit-Password" name="Password" class="form-input w-full">
             </div>
             <div>
-                <label for="edit-Rol" class="block text-sm font-medium">Rol</label>
-                <select id="edit-Rol" name="Rol" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md">
+                <label for="edit-Rol" class="block text-sm font-medium mb-1">Rol</label>
+                <select id="edit-Rol" name="Rol" required class="form-input w-full">
                     <option value="1">Conductor</option>
                     <option value="2">Administrador</option>
                 </select>
@@ -121,7 +139,7 @@
     </div>
 </div>
 
-
 <script src="js/gestion-usuarios.js"></script>
 </body>
 </html>
+
