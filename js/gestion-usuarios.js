@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- FUNCIONES ---
     const fetchUsers = async () => {
         try {
-            const response = await fetch('php/manage_users.php?action=read');
+            const response = await fetch('https://grammermx.com/Logistica/RootKanBan/dao/manage_users.php?action=read');
             const result = await response.json();
             if (result.success) {
                 renderUsers(result.data);
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('action', 'create');
 
         try {
-            const response = await fetch('php/manage_users.php', { method: 'POST', body: formData });
+            const response = await fetch('https://grammermx.com/Logistica/RootKanBan/dao/manage_users.php', { method: 'POST', body: formData });
             const result = await response.json();
             if (result.success) {
                 alert('Usuario creado con éxito.');
@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formData.append('IdUsuarios', id);
                 formData.append('Estatus', newStatus);
 
-                const response = await fetch('php/manage_users.php', { method: 'POST', body: formData });
+                const response = await fetch('https://grammermx.com/Logistica/RootKanBan/dao/manage_users.php', { method: 'POST', body: formData });
                 const result = await response.json();
                 if (result.success) fetchUsers(); else alert(result.message);
             }
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(editUserForm);
         formData.append('action', 'update');
 
-        const response = await fetch('php/manage_users.php', { method: 'POST', body: formData });
+        const response = await fetch('https://grammermx.com/Logistica/RootKanBan/dao/manage_users.php', { method: 'POST', body: formData });
         const result = await response.json();
 
         if (result.success) {
