@@ -80,8 +80,6 @@
             return; // Detener la ejecución del resto del script
         }
 
-        document.getElementById('user-name').textContent = usuarioData.Nombre;
-
         document.getElementById('logout-btn').addEventListener('click', () => {
             sessionStorage.removeItem('usuario');
             window.location.href = 'login.html';
