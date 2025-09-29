@@ -6,150 +6,218 @@
     <title>Registro de Parada</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
+    <!-- SweetAlert2 para notificaciones mejoradas -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         #qr-reader { border: 4px dashed #fb923c; border-radius: 1rem; }
-        #truck-animation {
-            position: fixed;
-            bottom: 20px;
-            left: -150px; /* Inicia fuera de la pantalla */
-            width: 120px;
-            height: 120px;
+
+        /* Animación del camión en el menú de selección */
+        @keyframes drive-by {
+            0% { transform: translateX(-200px); }
+            100% { transform: translateX(calc(100vw + 200px)); }
+        }
+        .truck-menu-animation {
+            width: 80px;
+            height: 80px;
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fb923c"><path d="M21.5,12.5h-1.81a4,4,0,0,0-3.86,2.94L14.36,20H4a2,2,0,0,1-2-2V7A2,2,0,0,1,4,5H14.36l1.47,4.56A4,4,0,0,0,19.69,11.5H21.5a1.5,1.5,0,0,1,0,3Z" /><path d="M14.36,5,13,9.16a4,4,0,0,1-3.86,2.84H3.5a1.5,1.5,0,0,1,0-3H9.14A4,4,0,0,1,13,5.16L14.36,1a1,1,0,0,1,1.1.13l3,2.5a1,1,0,0,1,0,1.5Z" /><path d="M19.69,14.5a4,4,0,0,1-3.86-2.94L14.36,7H4a2,2,0,0,0-2,2v9a2,2,0,0,0,2,2H14.36l1.47-4.56A4,4,0,0,1,19.69,14.5Z" /><path d="M18.5,20a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,18.5,20Z"/><path d="M6.5,20a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,6.5,20Z"/></svg>');
             background-size: contain;
             background-repeat: no-repeat;
+            position: absolute;
+            top: 25%;
+            left: 0;
+            animation: drive-by 8s linear infinite;
+        }
+
+        /* Animación del camión al registrar parada */
+        #truck-confirm-animation {
+            position: fixed; bottom: 20px; left: -150px;
+            width: 120px; height: 120px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fb923c"><path d="M21.5,12.5h-1.81a4,4,0,0,0-3.86,2.94L14.36,20H4a2,2,0,0,1-2-2V7A2,2,0,0,1,4,5H14.36l1.47,4.56A4,4,0,0,0,19.69,11.5H21.5a1.5,1.5,0,0,1,0,3Z" /><path d="M14.36,5,13,9.16a4,4,0,0,1-3.86,2.84H3.5a1.5,1.5,0,0,1,0-3H9.14A4,4,0,0,1,13,5.16L14.36,1a1,1,0,0,1,1.1.13l3,2.5a1,1,0,0,1,0,1.5Z" /><path d="M19.69,14.5a4,4,0,0,1-3.86-2.94L14.36,7H4a2,2,0,0,0-2,2v9a2,2,0,0,0,2,2H14.36l1.47-4.56A4,4,0,0,1,19.69,14.5Z" /><path d="M18.5,20a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,18.5,20Z"/><path d="M6.5,20a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,6.5,20Z"/></svg>');
+            background-size: contain; background-repeat: no-repeat;
             transition: left 2s ease-in-out;
             z-index: 50;
         }
-        .drive { left: calc(100vw + 150px); /* Termina fuera de la pantalla */ }
+        .drive { left: calc(100vw + 150px); }
     </style>
 </head>
-<body class="bg-gray-800 text-white flex flex-col items-center justify-center min-h-screen p-4">
+<body class="bg-gray-800 text-white flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
 
-<div id="truck-animation"></div>
+<div id="truck-confirm-animation"></div>
 
 <div id="main-container" class="w-full max-w-md bg-gray-900 p-8 rounded-2xl shadow-2xl">
 
-    <div id="scan-view">
+    <!-- Vista de Selección de Ruta -->
+    <div id="route-selection-view">
+        <h1 class="text-3xl font-bold text-center text-orange-400 mb-4">Iniciar Recorrido</h1>
+        <p class="text-center text-gray-400 mb-10">Selecciona la ruta que vas a comenzar.</p>
+        <div class="relative w-full h-24 mb-6">
+            <div class="truck-menu-animation"></div>
+        </div>
+        <div class="space-y-4">
+            <button data-route="1" class="route-btn w-full text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-lg px-5 py-3 text-center">Ruta 1</button>
+            <button data-route="2" class="route-btn w-full text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-lg px-5 py-3 text-center">Ruta 2</button>
+            <button data-route="Abierta" class="route-btn w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-lg px-5 py-3 text-center">Ruta Abierta</button>
+        </div>
+    </div>
+
+    <!-- Vista de Escaneo -->
+    <div id="scan-view" class="hidden">
         <h1 class="text-3xl font-bold text-center text-orange-400 mb-2">Registrar Parada</h1>
-        <p class="text-center text-gray-400 mb-6">Apunta la cámara al código QR de la estación.</p>
+        <p class="text-center text-gray-400 mb-6">Apunta la cámara al QR de la estación de la <span class="font-bold" id="selected-route-text"></span>.</p>
         <div id="qr-reader" class="w-full"></div>
-    </div>
-
-    <div id="confirm-view" class="hidden">
-        <h2 class="text-3xl font-bold text-center text-orange-400">Parada <span id="parada-numero"></span></h2>
-        <p class="text-center text-gray-400 mb-6">Ruta <span id="ruta-numero"></span></p>
-
-        <form id="stop-form">
-            <label for="comentarios" class="block mb-2 text-sm font-medium text-gray-300">Comentarios (Opcional)</label>
-            <textarea id="comentarios" rows="3" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5" placeholder="Añade una nota..."></textarea>
-
-            <button type="submit" class="w-full mt-6 text-white bg-orange-600 hover:bg-orange-700 focus:ring-4 focus:outline-none focus:ring-orange-500 font-medium rounded-lg text-lg px-5 py-3 text-center">
-                Confirmar Registro
-            </button>
-            <button type="button" id="cancel-scan" class="w-full mt-3 text-gray-400 hover:text-white hover:bg-gray-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
-                Volver a Escanear
-            </button>
-        </form>
-    </div>
-
-    <!-- Estado final de la ruta -->
-    <div id="complete-view" class="hidden text-center">
-        <h2 class="text-3xl font-bold text-green-400 mb-4">¡Ruta Finalizada!</h2>
-        <p class="text-gray-300 mb-6">Todas las paradas de la ruta han sido registradas. Presiona el botón para completar la bitácora.</p>
-        <button id="finish-route-btn" class="w-full text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-500 font-medium rounded-lg text-lg px-5 py-3">
-            Finalizar y Guardar Tiempo
+        <button type="button" id="back-to-selection" class="w-full mt-4 text-gray-400 hover:text-white hover:bg-gray-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+            Cambiar de Ruta
         </button>
     </div>
 
-</div>
+    <!-- Vista de Confirmación -->
+    <div id="confirm-view" class="hidden">
+        <h2 class="text-3xl font-bold text-center text-orange-400">Parada <span id="parada-numero"></span></h2>
+        <p class="text-center text-gray-400 mb-6">Ruta <span id="ruta-numero"></span></p>
+        <form id="stop-form">
+            <label for="comentarios" class="block mb-2 text-sm font-medium text-gray-300">Comentarios (Opcional)</label>
+            <textarea id="comentarios" rows="3" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5" placeholder="Añade una nota..."></textarea>
+            <button type="submit" class="w-full mt-6 text-white bg-orange-600 hover:bg-orange-700 focus:ring-4 focus:outline-none focus:ring-orange-500 font-medium rounded-lg text-lg px-5 py-3 text-center">Confirmar Registro</button>
+            <button type="button" id="cancel-scan" class="w-full mt-3 text-gray-400 hover:text-white hover:bg-gray-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Volver a Escanear</button>
+        </form>
+    </div>
 
-<!-- Modal de notificación -->
-<div id="notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-5 rounded-lg shadow-lg opacity-0 transition-opacity duration-300">
-    <p id="notification-message"></p>
+    <!-- Vista de Ruta Finalizada -->
+    <div id="complete-view" class="hidden text-center">
+        <h2 class="text-3xl font-bold text-green-400 mb-4">¡Ruta Finalizada!</h2>
+        <p class="text-gray-300 mb-6">Todas las paradas de la ruta han sido registradas. Presiona el botón para completar la bitácora.</p>
+        <button id="finish-route-btn" class="w-full text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-500 font-medium rounded-lg text-lg px-5 py-3">Finalizar y Guardar Tiempo</button>
+    </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-
+        // --- SEGURIDAD ---
         const usuarioData = JSON.parse(sessionStorage.getItem('usuario'));
-
-        // Si no hay usuario o el rol no es Administrador (2), redirigir al login
         if (!usuarioData) {
             window.location.href = 'login.html';
-            return; // Detener la ejecución del resto del script
+            return;
         }
 
+        // --- ELEMENTOS DEL DOM ---
+        const routeSelectionView = document.getElementById('route-selection-view');
         const scanView = document.getElementById('scan-view');
         const confirmView = document.getElementById('confirm-view');
         const completeView = document.getElementById('complete-view');
+        const routeButtons = document.querySelectorAll('.route-btn');
+        const backToSelectionBtn = document.getElementById('back-to-selection');
         const stopForm = document.getElementById('stop-form');
         const cancelScanBtn = document.getElementById('cancel-scan');
         const finishRouteBtn = document.getElementById('finish-route-btn');
-        const notification = document.getElementById('notification');
-        const notificationMessage = document.getElementById('notification-message');
-        const truck = document.getElementById('truck-animation');
+        const truck = document.getElementById('truck-confirm-animation');
 
+        // --- ESTADO DE LA APLICACIÓN ---
+        let selectedRoute = null;
         let qrData = null; // { ruta: '1', parada: '1' }
-        const TOTAL_STOPS_ROUTE_1 = 6;
+        const TOTAL_STOPS = { '1': 11, '2': 16 };
 
-        // Configuración del escaner QR
+        // --- LÓGICA DEL ESCÁNER QR ---
         const html5QrCode = new Html5Qrcode("qr-reader");
         const startScanner = () => {
-            scanView.classList.remove('hidden');
             confirmView.classList.add('hidden');
             completeView.classList.add('hidden');
+            routeSelectionView.classList.add('hidden');
+            scanView.classList.remove('hidden');
+            document.getElementById('selected-route-text').textContent = `Ruta ${selectedRoute}`;
 
             html5QrCode.start(
                 { facingMode: "environment" },
                 { fps: 10, qrbox: { width: 250, height: 250 } },
                 onScanSuccess,
-                onScanFailure
+                (error) => { /* Ignorar errores de "no QR found" */ }
             ).catch(err => {
-                console.error("No se pudo iniciar el escaner", err);
-                alert("Error al iniciar la cámara. Asegúrate de dar permisos.");
+                console.error("No se pudo iniciar el escáner", err);
+                Swal.fire({ icon: 'error', title: 'Error de Cámara', text: 'No se pudo iniciar la cámara. Asegúrate de dar los permisos necesarios.' });
             });
         };
 
         const stopScanner = () => {
-            html5QrCode.stop().catch(err => console.log("El escaner ya estaba detenido."));
+            html5QrCode.stop().catch(err => console.log("El escáner ya estaba detenido."));
         };
 
+        function hexToString(hex) {
+            let str = '';
+            for (let i = 0; i < hex.length; i += 2) {
+                str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+            }
+            return str;
+        }
+
         function onScanSuccess(decodedText, decodedResult) {
-            // Ejemplo de QR: "1Parada", "2Parada", etc.
-            const match = decodedText.match(/^(\d+)Parada$/);
-            if (match) {
-                stopScanner();
-                qrData = {
-                    // Por ahora, la ruta es siempre 1. Se puede mejorar para que el QR la incluya.
-                    ruta: '1',
-                    parada: match[1]
-                };
-                document.getElementById('ruta-numero').textContent = qrData.ruta;
-                document.getElementById('parada-numero').textContent = qrData.parada;
-                scanView.classList.add('hidden');
-                confirmView.classList.remove('hidden');
-            } else {
-                showNotification(`Código QR no válido: ${decodedText}`, 'error');
+            try {
+                const decodedString = hexToString(decodedText);
+                // Formato esperado: "2ParadaRuta1", "0ParadaRuta2", etc.
+                const match = decodedString.match(/^(\d+|Inicio|Fin)ParadaRuta(\d+)$/);
+
+                if (match) {
+                    const parada = match[1];
+                    const rutaQR = match[2];
+
+                    if (rutaQR !== selectedRoute) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Ruta Incorrecta',
+                            text: `Este QR pertenece a la Ruta ${rutaQR}, pero tienes seleccionada la Ruta ${selectedRoute}.`,
+                            background: '#1f2937', color: '#ffffff'
+                        });
+                        return; // No detener el scanner, permitir reintento
+                    }
+
+                    stopScanner();
+                    qrData = { ruta: rutaQR, parada: parada };
+                    document.getElementById('ruta-numero').textContent = qrData.ruta;
+                    document.getElementById('parada-numero').textContent = qrData.parada;
+                    scanView.classList.add('hidden');
+                    confirmView.classList.remove('hidden');
+                } else {
+                    throw new Error('Formato de QR no válido.');
+                }
+            } catch (e) {
+                console.warn("Error en QR:", e.message);
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'QR No Reconocido',
+                    text: 'El código QR escaneado no tiene el formato esperado para este sistema.',
+                    background: '#1f2937', color: '#ffffff',
+                    timer: 2500, showConfirmButton: false
+                });
             }
         }
 
-        function onScanFailure(error) {
-            // No hacer nada, es normal que falle hasta que encuentre un QR
-        }
+        // --- MANEJADORES DE EVENTOS ---
+        routeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                selectedRoute = button.dataset.route;
+                // Por ahora, "Ruta Abierta" funciona igual que las demás, se puede agregar lógica especial aquí
+                startScanner();
+            });
+        });
+
+        backToSelectionBtn.addEventListener('click', () => {
+            stopScanner();
+            scanView.classList.add('hidden');
+            routeSelectionView.classList.remove('hidden');
+            selectedRoute = null;
+        });
 
         cancelScanBtn.addEventListener('click', startScanner);
 
         stopForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const comentarios = document.getElementById('comentarios').value;
-            let folioRuta = sessionStorage.getItem('folioRuta');
+            let folioRuta = sessionStorage.getItem(`folioRuta_R${selectedRoute}`);
 
             if (!folioRuta && qrData.parada === '0') {
                 folioRuta = `FR-${Date.now()}`;
-                sessionStorage.setItem('folioRuta', folioRuta);
+                sessionStorage.setItem(`folioRuta_R${selectedRoute}`, folioRuta);
             } else if (!folioRuta) {
-                alert("Error: Debes escanear la parada 1 para iniciar una nueva ruta.");
+                Swal.fire({ icon: 'error', title: 'Ruta no iniciada', text: 'Debes escanear la parada "Inicio" (0) para comenzar una nueva ruta.' });
                 return;
             }
 
@@ -157,8 +225,8 @@
                 ...qrData,
                 comentarios,
                 folioRuta,
-                usuario: usuarioData.IdUsuarios, // Usuario fijo
-                totalStops: TOTAL_STOPS_ROUTE_1
+                usuario: usuarioData.IdUsuarios,
+                totalStops: TOTAL_STOPS[selectedRoute] || 99 // un default para ruta abierta
             };
 
             try {
@@ -170,7 +238,7 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`Parada ${qrData.parada} registrada con éxito`, 'success');
+                    Swal.fire({ icon: 'success', title: '¡Registrado!', text: `Parada ${qrData.parada} de la Ruta ${qrData.ruta} guardada.`, timer: 2000, showConfirmButton: false, background: '#1f2937', color: '#ffffff'});
                     animateTruck();
                     document.getElementById('comentarios').value = '';
 
@@ -185,14 +253,14 @@
                 }
             } catch (error) {
                 console.error('Error en el registro:', error);
-                showNotification(error.message, 'error');
+                Swal.fire({ icon: 'error', title: 'Error de Registro', text: error.message, background: '#1f2937', color: '#ffffff' });
             }
         });
 
         finishRouteBtn.addEventListener('click', async () => {
-            const folioRuta = sessionStorage.getItem('folioRuta');
+            const folioRuta = sessionStorage.getItem(`folioRuta_R${selectedRoute}`);
             if (!folioRuta) {
-                alert("No se encontró Folio de Ruta para finalizar.");
+                Swal.fire({ icon: 'error', title: 'Error', text: 'No se encontró Folio de Ruta para finalizar.', background: '#1f2937', color: '#ffffff' });
                 return;
             }
 
@@ -205,42 +273,29 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`Ruta completada en ${result.data.tiempoTotal} minutos.`, 'success');
-                    sessionStorage.removeItem('folioRuta');
+                    Swal.fire({ icon: 'success', title: '¡Ruta Completada!', text: `El recorrido se guardó en ${result.data.tiempoTotal} minutos.`, background: '#1f2937', color: '#ffffff' });
+                    sessionStorage.removeItem(`folioRuta_R${selectedRoute}`);
                     setTimeout(() => {
                         completeView.classList.add('hidden');
-                        startScanner();
+                        routeSelectionView.classList.remove('hidden'); // Volver al inicio
                     }, 3000);
                 } else {
                     throw new Error(result.message || 'Error al finalizar la ruta.');
                 }
-
             } catch (error) {
                 console.error('Error al finalizar:', error);
-                showNotification(error.message, 'error');
+                Swal.fire({ icon: 'error', title: 'Error al Finalizar', text: error.message, background: '#1f2937', color: '#ffffff' });
             }
         });
-
-        function showNotification(message, type = 'success') {
-            notificationMessage.textContent = message;
-            notification.classList.remove('bg-green-500', 'bg-red-500');
-            notification.classList.add(type === 'success' ? 'bg-green-500' : 'bg-red-500');
-            notification.classList.remove('opacity-0');
-            setTimeout(() => {
-                notification.classList.add('opacity-0');
-            }, 3000);
-        }
 
         function animateTruck() {
             truck.classList.add('drive');
             setTimeout(() => {
                 truck.classList.remove('drive');
-            }, 2500); // El tiempo debe ser mayor a la duración de la transición
+            }, 2500);
         }
-
-        // Iniciar el proceso
-        startScanner();
     });
 </script>
 </body>
 </html>
+
