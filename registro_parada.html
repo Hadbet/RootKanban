@@ -80,11 +80,6 @@
             return; // Detener la ejecución del resto del script
         }
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            sessionStorage.removeItem('usuario');
-            window.location.href = 'login.html';
-        });
-
         const scanView = document.getElementById('scan-view');
         const confirmView = document.getElementById('confirm-view');
         const completeView = document.getElementById('complete-view');
