@@ -152,7 +152,7 @@
             const comentarios = document.getElementById('comentarios').value;
             let folioRuta = sessionStorage.getItem('folioRuta');
 
-            if (!folioRuta && qrData.parada === '1') {
+            if (!folioRuta && qrData.parada === '0') {
                 folioRuta = `FR-${Date.now()}`;
                 sessionStorage.setItem('folioRuta', folioRuta);
             } else if (!folioRuta) {
