@@ -128,7 +128,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         // --- SCRIPT DE SEGURIDAD Y SESIÓN ---
         const usuarioData = JSON.parse(sessionStorage.getItem('usuario'));
-        if (!usuarioData || usuarioData.Rol !== 2) { // El rol debe ser '2' (string)
+        if (!usuarioData || usuarioData.Rol != 2) { // CORREGIDO: Comparación flexible para rol
             window.location.href = 'login.html';
             return;
         }
@@ -139,7 +139,6 @@
         });
 
         // --- DEFINICIÓN DE COORDENADAS Y PARADAS ---
-        // Se añade la propiedad `isStop` y `label` para las paradas designadas.
         const ALL_STOPS_ROUTE_1 = [
             { x: 1200, y: 250, isStop: true, label: 'Inicio', paradaNum: '0'},
             { x: 620, y: 250, isStop: true, label: '1', paradaNum: '1' },
@@ -257,8 +256,8 @@
 
                 // 3. Dibuja la ruta activa (naranja) conectando solo las paradas completadas
                 const completedPoints = completedStopsData
-                    .map(stop => this.stopMap.get(stop.Parada))
-                    .filter(Boolean); // Filtra por si llega una parada no definida
+                    .map(stop => this.stopMap.get(String(stop.Parada))) // CORREGIDO: Convertir a string para la búsqueda
+                    .filter(Boolean);
 
                 if (completedPoints.length > 0) {
                     ctx.strokeStyle = '#f97316';
@@ -306,10 +305,9 @@
                     this.bitacoraBody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-gray-400">No hay paradas registradas.</td></tr>`;
                     return;
                 }
-                // Ordenar por la fecha para asegurar el orden cronológico
                 stops.sort((a, b) => new Date(a.Fecha) - new Date(b.Fecha));
                 stops.forEach(stop => {
-                    const point = this.stopMap.get(stop.Parada);
+                    const point = this.stopMap.get(String(stop.Parada)); // CORREGIDO: Convertir a string para la búsqueda
                     const label = point ? point.label : `Desconocida (${stop.Parada})`;
                     const row = document.createElement('tr');
                     row.className = 'bg-gray-800 border-b border-gray-700 hover:bg-gray-600';
@@ -321,26 +319,22 @@
 
         // --- INICIALIZACIÓN ---
         const image = new Image();
-        image.src = 'layout.jpg'; // Asegúrate que esta imagen exista
+        image.src = 'layout.jpg';
 
         image.onload = () => {
-            // Configurar dimensiones de ambos canvas
             document.querySelectorAll('canvas').forEach(canvas => {
                 canvas.width = image.naturalWidth;
                 canvas.height = image.naturalHeight;
             });
 
-            // Crear instancias para cada ruta
             const route1 = new RouteManager('1', ALL_STOPS_ROUTE_1);
             const route2 = new RouteManager('2', ALL_STOPS_ROUTE_2);
 
-            // Iniciar la carga de datos
             route1.fetchData();
             route2.fetchData();
             setInterval(() => route1.fetchData(), 5000);
-            setInterval(() => route2.fetchData(), 5000); // Sincronizamos los intervalos
+            setInterval(() => route2.fetchData(), 5000);
 
-            // Cargar historial
             fetchCompletedRoutes();
             setInterval(fetchCompletedRoutes, 15000);
         };
@@ -365,7 +359,7 @@
 
         function updateHistoryTable(routes) {
             historialBody.innerHTML = '';
-            routes.sort((a, b) => new Date(b.FechaFinalizacion) - new Date(a.FechaFinalizacion)); // Ordenar por más reciente
+            routes.sort((a, b) => new Date(b.FechaFinalizacion) - new Date(a.FechaFinalizacion));
             routes.forEach(route => {
                 const row = document.createElement('tr');
                 row.className = 'bg-gray-800 border-b border-gray-700 hover:bg-gray-600';
