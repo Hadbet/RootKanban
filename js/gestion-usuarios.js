@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = 'login.html';
     });
 
-    // --- ELEMENTOS DEL DOM ---
     const userForm = document.getElementById('user-form');
     const usersTableBody = document.getElementById('users-table-body');
     const editModal = document.getElementById('edit-modal');
