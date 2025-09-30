@@ -2,6 +2,9 @@
 header('Content-Type: application/json');
 require_once 'db/db_Rutas.php';
 
+// CORRECCIÓN: Establecer la zona horaria solicitada.
+date_default_timezone_set('America/Denver');
+
 $response = ['success' => false, 'message' => '', 'data' => null];
 $data = json_decode(file_get_contents('php://input'), true);
 
@@ -18,8 +21,9 @@ try {
     $conex = $con->conectar();
     $conex->begin_transaction();
 
-    // 1. Obtener la fecha de la primera parada (FechaInicio), la ruta y el usuario.
-    $sql_select = "SELECT MIN(Fecha) as startTime, Ruta, Usuario FROM BitacoraParadas WHERE FolioRuta = ? GROUP BY Ruta, Usuario";
+    // 1. Obtener la fecha de la primera parada (FechaInicio) y el usuario.
+    // Se agrupa por usuario para asegurar que tomamos los datos de un solo operador por ruta.
+    $sql_select = "SELECT MIN(Fecha) as startTime, Usuario FROM BitacoraParadas WHERE FolioRuta = ? GROUP BY Usuario";
     $stmt_select = $conex->prepare($sql_select);
     if($stmt_select === false) throw new Exception("Error al preparar la consulta de inicio: " . $conex->error);
 
@@ -35,35 +39,36 @@ try {
     $startTime = $result['startTime'];
     $usuario = $result['Usuario'];
 
-    // 2. Calcular el tiempo total en minutos desde la primera parada hasta ahora.
+    // CORRECCIÓN: Calcular el tiempo total en minutos de forma precisa.
+    // Ambos objetos DateTime ahora usarán la zona horaria definida al inicio del script.
     $start_time_obj = new DateTime($startTime);
-    $end_time_obj = new DateTime(); // Fecha y hora actual para FechaFinalizacion
-    $start_time_obj->setTimezone(new DateTimeZone('America/Denver'));
-    $end_time_obj->setTimezone(new DateTimeZone('America/Denver'));
+    $end_time_obj = new DateTime(); // Fecha y hora actual
+
     $interval = $start_time_obj->diff($end_time_obj);
+    // Cálculo preciso de la diferencia total en minutos.
     $tiempoTotal = ($interval->days * 24 * 60) + ($interval->h * 60) + $interval->i;
 
-    $Object = new DateTime();
-    $Object->setTimezone(new DateTimeZone('America/Denver')); // Considera usar 'America/Mexico_City' si aplica
-    $DateAndTime = $Object->format("Y-m-d H:i:s");
+    // Formatear la fecha de finalización para la base de datos.
+    $DateAndTime = $end_time_obj->format("Y-m-d H:i:s");
+
 
     // 3. Insertar el registro en la bitácora completa
     $sql_insert = "INSERT INTO BitacoraCompleta (TiempoTotal, IdRuta, Usuario, FechaInicio, FechaFinalizacion) VALUES (?, ?, ?, ?, ?)";
     $stmt_insert = $conex->prepare($sql_insert);
     if($stmt_insert === false) throw new Exception("Error al preparar la inserción final: " . $conex->error);
 
-    $stmt_insert->bind_param("issss", $tiempoTotal, $folioRuta, $usuario, $startTime,$DateAndTime);
+    $stmt_insert->bind_param("issss", $tiempoTotal, $folioRuta, $usuario, $startTime, $DateAndTime);
 
     if (!$stmt_insert->execute()) {
         throw new Exception("Error al guardar la bitácora completa: " . $stmt_insert->error);
     }
+    $stmt_insert->close();
+
+    $conex->commit();
 
     $response['data'] = ['tiempoTotal' => $tiempoTotal];
     $response['success'] = true;
     $response['message'] = 'Ruta completada y registrada.';
-
-    $conex->commit();
-    $stmt_insert->close();
 
 } catch (Exception $e) {
     if (isset($conex) && $conex->ping()) $conex->rollback();
