@@ -38,15 +38,21 @@ try {
     // 2. Calcular el tiempo total en minutos desde la primera parada hasta ahora.
     $start_time_obj = new DateTime($startTime);
     $end_time_obj = new DateTime(); // Fecha y hora actual para FechaFinalizacion
+    $start_time_obj->setTimezone(new DateTimeZone('America/Denver'));
+    $end_time_obj->setTimezone(new DateTimeZone('America/Denver'));
     $interval = $start_time_obj->diff($end_time_obj);
     $tiempoTotal = ($interval->days * 24 * 60) + ($interval->h * 60) + $interval->i;
 
+    $Object = new DateTime();
+    $Object->setTimezone(new DateTimeZone('America/Denver')); // Considera usar 'America/Mexico_City' si aplica
+    $DateAndTime = $Object->format("Y-m-d H:i:s");
+
     // 3. Insertar el registro en la bitácora completa
-    $sql_insert = "INSERT INTO BitacoraCompleta (TiempoTotal, IdRuta, Usuario, FechaInicio, FechaFinalizacion) VALUES (?, ?, ?, ?, NOW())";
+    $sql_insert = "INSERT INTO BitacoraCompleta (TiempoTotal, IdRuta, Usuario, FechaInicio, FechaFinalizacion) VALUES (?, ?, ?, ?, ?)";
     $stmt_insert = $conex->prepare($sql_insert);
     if($stmt_insert === false) throw new Exception("Error al preparar la inserción final: " . $conex->error);
 
-    $stmt_insert->bind_param("isss", $tiempoTotal, $folioRuta, $usuario, $startTime);
+    $stmt_insert->bind_param("issss", $tiempoTotal, $folioRuta, $usuario, $startTime,$DateAndTime);
 
     if (!$stmt_insert->execute()) {
         throw new Exception("Error al guardar la bitácora completa: " . $stmt_insert->error);

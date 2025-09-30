@@ -25,12 +25,16 @@ try {
     $conex = $con->conectar();
     $conex->begin_transaction();
 
+    $Object = new DateTime();
+    $Object->setTimezone(new DateTimeZone('America/Denver')); // Considera usar 'America/Mexico_City' si aplica
+    $DateAndTime = $Object->format("Y-m-d H:i:s");
+
     // 1. Insertar la nueva parada
-    $sql_insert = "INSERT INTO BitacoraParadas (Ruta, Parada, Fecha, Estatus, Usuario, Comentarios, FolioRuta) VALUES (?, ?, NOW(), ?, ?, ?, ?)";
+    $sql_insert = "INSERT INTO BitacoraParadas (Ruta, Parada, Fecha, Estatus, Usuario, Comentarios, FolioRuta) VALUES (?, ?, ?, ?, ?, ?, ?)";
     $stmt_insert = $conex->prepare($sql_insert);
     if ($stmt_insert === false) throw new Exception('Error al preparar inserción: ' . $conex->error);
 
-    $stmt_insert->bind_param("iisiss", $ruta, $parada, $estatus, $usuario, $comentarios, $folioRuta);
+    $stmt_insert->bind_param("iississ", $ruta, $parada,$DateAndTime, $estatus, $usuario, $comentarios, $folioRuta);
 
     if (!$stmt_insert->execute()) {
         throw new Exception('Error al registrar la parada: ' . $stmt_insert->error);
