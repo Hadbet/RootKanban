@@ -9,11 +9,13 @@
         body { font-family: 'Inter', sans-serif; }
         .canvas-container { aspect-ratio: 1920 / 861; }
         .truck-icon {
-            position: absolute; width: 50px; height: 50px;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fb923c"><path d="M21.5,12.5h-1.81a4,4,0,0,0-3.86,2.94L14.36,20H4a2,2,0,0,1-2-2V7A2,2,0,0,1,4,5H14.36l1.47,4.56A4,4,0,0,0,19.69,11.5H21.5a1.5,1.5,0,0,1,0,3Z" opacity="0.4"/><path d="M14.36,5,13,9.16a4,4,0,0,1-3.86,2.84H3.5a1.5,1.5,0,0,1,0-3H9.14A4,4,0,0,1,13,5.16L14.36,1a1,1,0,0,1,1.1.13l3,2.5a1,1,0,0,1,0,1.5Z" opacity="0.4"/><path d="M19.69,14.5a4,4,0,0,1-3.86-2.94L14.36,7H4a2,2,0,0,0-2,2v9a2,2,0,0,0,2,2H14.36l1.47-4.56A4,4,0,0,1,19.69,14.5Z" fill="%23f97316"/><path d="M18.5,20a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,18.5,20Z" fill="%23fbbf24"/><path d="M6.5,20a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,6.5,20Z" fill="%23fbbf24"/></svg>');
+            position: absolute; width: 40px; height: 40px;
+            /* ÍCONO ACTUALIZADO: Flecha estilizada */
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23f97316"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.59V14a1 1 0 0 0-2 0v2.59a1 1 0 0 0 .29.7l2 2a1 1 0 0 0 1.42 0 1 1 0 0 0 0-1.42z"/><path d="m16.45 8.66-3.79-3.79a1 1 0 0 0-1.41 0l-3.79 3.79a1 1 0 0 0 1.41 1.41L11 8.41V14a1 1 0 0 0 2 0V8.41l2.05 2.06a1 1 0 0 0 1.41-1.41z"/></svg>');
             background-size: contain; background-repeat: no-repeat;
             transition: all 1s ease-in-out; transform: translate(-50%, -50%);
             opacity: 0;
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.8));
         }
     </style>
 </head>
@@ -28,7 +30,7 @@
             </div>
             <div class="hidden md:block">
                 <div class="ml-10 flex items-baseline space-x-4">
-                    <a href="vizor_paradas.html" class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium">Inicio</a>
+                    <a href="visor.html" class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium">Inicio</a>
                     <a href="reportes.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Reportes</a>
                     <a href="usuarios.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Usuarios</a>
                 </div>
@@ -103,7 +105,7 @@
             </div>
         </div>
 
-        <!-- HISTORIAL DE RUTAS COMPLETADAS (se mantiene igual) -->
+        <!-- HISTORIAL DE RUTAS COMPLETADAS -->
         <div class="bg-gray-800 p-6 rounded-xl shadow-2xl max-w-7xl mx-auto">
             <h2 class="text-2xl font-bold mb-4 border-b-2 border-orange-500 pb-2">Historial de Rutas Completadas</h2>
             <div class="overflow-auto max-h-96">
@@ -127,9 +129,9 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- SCRIPT DE SEGURIDAD Y SESIÓN ---
+        // --- SEGURIDAD Y SESIÓN ---
         const usuarioData = JSON.parse(sessionStorage.getItem('usuario'));
-        if (!usuarioData || usuarioData.Rol != 2) { // CORREGIDO: Comparación flexible para rol
+        if (!usuarioData || usuarioData.Rol != 2) {
             window.location.href = 'login.html';
             return;
         }
@@ -141,51 +143,10 @@
 
         // --- DEFINICIÓN DE COORDENADAS Y PARADAS ---
         const ALL_STOPS_ROUTE_1 = [
-            { x: 1200, y: 250, isStop: true, label: 'Inicio', paradaNum: '0'},
-            { x: 620, y: 250, isStop: true, label: '1', paradaNum: '1' },
-            { x: 440, y: 250, isStop: true, label: '2', paradaNum: '2' },
-            { x: 340, y: 250, isStop: true, label: '3', paradaNum: '3' },
-            { x: 280, y: 250 }, { x: 280, y: 100 }, { x: 270, y: 100 }, { x: 270, y: 250 }, { x: 220, y: 250 }, { x: 220, y: 350 }, { x: 230, y: 350 },
-            { x: 230, y: 260, isStop: true, label: '4', paradaNum: '4' },
-            { x: 560, y: 260 }, { x: 560, y: 310 },
-            { x: 600, y: 310, isStop: true, label: '5', paradaNum: '5' },
-            { x: 640, y: 310, isStop: true, label: '6', paradaNum: '6' },
-            { x: 800, y: 310, isStop: true, label: '7', paradaNum: '7' },
-            { x: 890, y: 310, isStop: true, label: '8', paradaNum: '8' },
-            { x: 890, y: 360 },
-            { x: 900, y: 360, isStop: true, label: '9', paradaNum: '9' },
-            { x: 900, y: 280 },
-            { x: 900, y: 310, isStop: true, label: '10', paradaNum: '10' },
-            { x: 980, y: 310 },
-            { x: 1050, y: 310, isStop: true, label: '11', paradaNum: '11' },
-            { x: 1050, y: 280 }, { x: 1050, y: 260 },
-            { x: 1200, y: 260, isStop: true, label: 'Fin', paradaNum: '100'}
+            { x: 1200, y: 250, isStop: true, label: 'Inicio', paradaNum: '0'}, { x: 620, y: 250, isStop: true, label: '1', paradaNum: '1' }, { x: 440, y: 250, isStop: true, label: '2', paradaNum: '2' }, { x: 340, y: 250, isStop: true, label: '3', paradaNum: '3' }, { x: 280, y: 250 }, { x: 280, y: 100 }, { x: 270, y: 100 }, { x: 270, y: 250 }, { x: 220, y: 250 }, { x: 220, y: 350 }, { x: 230, y: 350 }, { x: 230, y: 260, isStop: true, label: '4', paradaNum: '4' }, { x: 560, y: 260 }, { x: 560, y: 310 }, { x: 600, y: 310, isStop: true, label: '5', paradaNum: '5' }, { x: 640, y: 310, isStop: true, label: '6', paradaNum: '6' }, { x: 800, y: 310, isStop: true, label: '7', paradaNum: '7' }, { x: 890, y: 310, isStop: true, label: '8', paradaNum: '8' }, { x: 890, y: 360 }, { x: 900, y: 360, isStop: true, label: '9', paradaNum: '9' }, { x: 900, y: 280 }, { x: 900, y: 310, isStop: true, label: '10', paradaNum: '10' }, { x: 980, y: 310 }, { x: 1050, y: 310, isStop: true, label: '11', paradaNum: '11' }, { x: 1050, y: 280 }, { x: 1050, y: 260 }, { x: 1200, y: 260, isStop: true, label: 'Fin', paradaNum: '100'}
         ];
         const ALL_STOPS_ROUTE_2 = [
-            { x: 1200, y: 250, isStop: true, label: 'Inicio', paradaNum: '0' },
-            { x: 900, y: 250, isStop: true, label: '1', paradaNum: '1' },
-            { x: 800, y: 250, isStop: true, label: '2', paradaNum: '2' },
-            { x: 650, y: 250, isStop: true, label: '3', paradaNum: '3' },
-            { x: 410, y: 250, isStop: true, label: '4', paradaNum: '4' },
-            { x: 350, y: 250, isStop: true, label: '5', paradaNum: '5' },
-            { x: 280, y: 250 }, { x: 280, y: 100 },
-            { x: 270, y: 100, isStop: true, label: '6', paradaNum: '6' },
-            { x: 270, y: 250 }, { x: 220, y: 250 }, { x: 220, y: 350 }, { x: 230, y: 350 },
-            { x: 230, y: 260, isStop: true, label: '7', paradaNum: '7' },
-            { x: 300, y: 260, isStop: true, label: '8', paradaNum: '8' },
-            { x: 750, y: 260 },
-            { x: 750, y: 310, isStop: true, label: '9', paradaNum: '9' },
-            { x: 850, y: 310, isStop: true, label: '10', paradaNum: '10' },
-            { x: 905, y: 310 }, { x: 905, y: 260 },
-            { x: 890, y: 260, isStop: true, label: '11', paradaNum: '11' },
-            { x: 890, y: 360, isStop: true, label: '12', paradaNum: '12' },
-            { x: 905, y: 360 }, { x: 905, y: 310 },
-            { x: 980, y: 310, isStop: true, label: '13', paradaNum: '13' },
-            { x: 1050, y: 310 }, { x: 1050, y: 250 }, { x: 990, y: 250 },
-            { x: 990, y: 260, isStop: true, label: '14', paradaNum: '14' },
-            { x: 1030, y: 260, isStop: true, label: '15', paradaNum: '15' },
-            { x: 1100, y: 260, isStop: true, label: '16', paradaNum: '16' },
-            { x: 1200, y: 260, isStop: true, label: 'Fin', paradaNum: '100' }
+            { x: 1200, y: 250, isStop: true, label: 'Inicio', paradaNum: '0' }, { x: 900, y: 250, isStop: true, label: '1', paradaNum: '1' }, { x: 800, y: 250, isStop: true, label: '2', paradaNum: '2' }, { x: 650, y: 250, isStop: true, label: '3', paradaNum: '3' }, { x: 410, y: 250, isStop: true, label: '4', paradaNum: '4' }, { x: 350, y: 250, isStop: true, label: '5', paradaNum: '5' }, { x: 280, y: 250 }, { x: 280, y: 100 }, { x: 270, y: 100, isStop: true, label: '6', paradaNum: '6' }, { x: 270, y: 250 }, { x: 220, y: 250 }, { x: 220, y: 350 }, { x: 230, y: 350 }, { x: 230, y: 260, isStop: true, label: '7', paradaNum: '7' }, { x: 300, y: 260, isStop: true, label: '8', paradaNum: '8' }, { x: 750, y: 260 }, { x: 750, y: 310, isStop: true, label: '9', paradaNum: '9' }, { x: 850, y: 310, isStop: true, label: '10', paradaNum: '10' }, { x: 905, y: 310 }, { x: 905, y: 260 }, { x: 890, y: 260, isStop: true, label: '11', paradaNum: '11' }, { x: 890, y: 360, isStop: true, label: '12', paradaNum: '12' }, { x: 905, y: 360 }, { x: 905, y: 310 }, { x: 980, y: 310, isStop: true, label: '13', paradaNum: '13' }, { x: 1050, y: 310 }, { x: 1050, y: 250 }, { x: 990, y: 250 }, { x: 990, y: 260, isStop: true, label: '14', paradaNum: '14' }, { x: 1030, y: 260, isStop: true, label: '15', paradaNum: '15' }, { x: 1100, y: 260, isStop: true, label: '16', paradaNum: '16' }, { x: 1200, y: 260, isStop: true, label: 'Fin', paradaNum: '100' }
         ];
 
         // --- CLASE PARA GESTIONAR CADA RUTA ---
@@ -225,17 +186,20 @@
                 ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                 ctx.drawImage(image, 0, 0);
 
-                // 1. Dibuja el trazado completo de la ruta en gris
-                ctx.strokeStyle = 'rgba(107, 114, 128, 0.5)';
-                ctx.lineWidth = 10;
+                // 1. Dibuja el trazado completo en rojo y punteado
+                ctx.save(); // Guardar estado del contexto
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)'; // rojo con transparencia
+                ctx.lineWidth = 8;
+                ctx.setLineDash([15, 10]); // LÍNEA PUNTEADA
                 ctx.beginPath();
                 ctx.moveTo(this.stopsData[0].x, this.stopsData[0].y);
                 for (let i = 1; i < this.stopsData.length; i++) {
                     ctx.lineTo(this.stopsData[i].x, this.stopsData[i].y);
                 }
                 ctx.stroke();
+                ctx.restore(); // Restaurar a línea sólida
 
-                // 2. Dibuja todas las paradas designadas con su etiqueta
+                // 2. Dibuja todas las paradas designadas con su etiqueta "P#"
                 this.stopsData.forEach(point => {
                     if (point.isStop) {
                         ctx.beginPath();
@@ -244,9 +208,15 @@
                         ctx.fill();
 
                         ctx.fillStyle = 'white';
-                        ctx.font = 'bold 16px Inter';
+                        ctx.font = 'bold 18px Inter';
                         ctx.textAlign = 'center';
-                        ctx.fillText(point.label, point.x, point.y - 15);
+
+                        // ETIQUETA "P#"
+                        let label = point.label;
+                        if (!isNaN(parseInt(label))) {
+                            label = `P${label}`;
+                        }
+                        ctx.fillText(label, point.x, point.y - 18);
                     }
                 });
 
@@ -255,26 +225,32 @@
                     return;
                 }
 
-                // 3. Dibuja la ruta activa (naranja) conectando solo las paradas completadas
-                const completedPoints = completedStopsData
-                    .map(stop => this.stopMap.get(String(stop.Parada))) // CORREGIDO: Convertir a string para la búsqueda
-                    .filter(Boolean);
+                // Unir datos de paradas completadas con sus coordenadas
+                const completedPoints = completedStopsData.map(stop => ({
+                    point: this.stopMap.get(String(stop.Parada)),
+                    data: stop
+                })).filter(item => item.point);
 
+
+                // 3. Dibuja la ruta activa (naranja) conectando solo las paradas completadas
                 if (completedPoints.length > 0) {
                     ctx.strokeStyle = '#f97316';
                     ctx.lineWidth = 12;
                     ctx.lineCap = 'round';
                     ctx.lineJoin = 'round';
                     ctx.beginPath();
-                    ctx.moveTo(completedPoints[0].x, completedPoints[0].y);
+                    ctx.moveTo(completedPoints[0].point.x, completedPoints[0].point.y);
                     for (let i = 1; i < completedPoints.length; i++) {
-                        ctx.lineTo(completedPoints[i].x, completedPoints[i].y);
+                        ctx.lineTo(completedPoints[i].point.x, completedPoints[i].point.y);
                     }
                     ctx.stroke();
                 }
 
-                // 4. Dibuja un círculo más prominente en las paradas completadas
-                completedPoints.forEach(point => {
+                // 4. Dibuja un círculo prominente y la HORA en las paradas completadas
+                completedPoints.forEach(item => {
+                    const point = item.point;
+                    const stopData = item.data;
+
                     ctx.beginPath();
                     ctx.arc(point.x, point.y, 12, 0, 2 * Math.PI);
                     ctx.fillStyle = '#fb923c';
@@ -282,9 +258,19 @@
                     ctx.strokeStyle = 'white';
                     ctx.lineWidth = 3;
                     ctx.stroke();
+
+                    // DIBUJA LA HORA DEL ESCANEO
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    ctx.fillRect(point.x - 35, point.y + 15, 70, 25);
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 16px Inter';
+                    ctx.textAlign = 'center';
+                    const date = new Date(stopData.Fecha);
+                    const timeString = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                    ctx.fillText(timeString, point.x, point.y + 33);
                 });
 
-                this.updateTruckPosition(completedPoints[completedPoints.length - 1]);
+                this.updateTruckPosition(completedPoints[completedPoints.length - 1].point);
             }
 
             updateTruckPosition(lastPoint) {
@@ -308,8 +294,11 @@
                 }
                 stops.sort((a, b) => new Date(a.Fecha) - new Date(b.Fecha));
                 stops.forEach(stop => {
-                    const point = this.stopMap.get(String(stop.Parada)); // CORREGIDO: Convertir a string para la búsqueda
-                    const label = point ? point.label : `Desconocida (${stop.Parada})`;
+                    const point = this.stopMap.get(String(stop.Parada));
+                    let label = point ? point.label : `Desconocida (${stop.Parada})`;
+                    if (!isNaN(parseInt(label))) {
+                        label = `P${label}`;
+                    }
                     const row = document.createElement('tr');
                     row.className = 'bg-gray-800 border-b border-gray-700 hover:bg-gray-600';
                     row.innerHTML = `<td class="px-4 py-3 font-medium text-white">${label}</td><td class="px-4 py-3">${stop.Usuario}</td><td class="px-4 py-3">${new Date(stop.Fecha).toLocaleString('es-MX')}</td>`;
@@ -340,7 +329,7 @@
             setInterval(fetchCompletedRoutes, 15000);
         };
 
-        // --- LÓGICA DEL HISTORIAL (se mantiene igual) ---
+        // --- LÓGICA DEL HISTORIAL ---
         const historialBody = document.getElementById('historial-body');
         const loadingHistory = document.getElementById('loading-history');
         async function fetchCompletedRoutes() {
