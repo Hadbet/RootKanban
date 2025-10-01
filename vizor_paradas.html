@@ -202,19 +202,27 @@
                 // 2. Dibuja todas las paradas designadas con su etiqueta "P#"
                 this.stopsData.forEach(point => {
                     if (point.isStop) {
+                        // Dibuja el punto base
                         ctx.beginPath();
                         ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
                         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
                         ctx.fill();
 
-                        ctx.fillStyle = 'white';
-                        ctx.font = 'bold 18px Inter';
-                        ctx.textAlign = 'center';
-
+                        // Prepara la etiqueta
                         let label = point.label;
                         if (!isNaN(parseInt(label))) {
                             label = `P${label}`;
                         }
+                        ctx.font = 'bold 18px Inter';
+                        const textWidth = ctx.measureText(label).width;
+
+                        // Dibuja el fondo semitransparente para la etiqueta
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                        ctx.fillRect(point.x - textWidth / 2 - 5, point.y - 35, textWidth + 10, 22);
+
+                        // Dibuja el texto de la etiqueta
+                        ctx.fillStyle = 'white';
+                        ctx.textAlign = 'center';
                         ctx.fillText(label, point.x, point.y - 18);
                     }
                 });
@@ -243,16 +251,10 @@
                     }
                 }
 
-                // 4. Dibuja la HORA en las paradas completadas (el círculo grande se elimina)
+                // 4. Dibuja la HORA en las paradas completadas
                 completedPoints.forEach(item => {
                     const point = item.point;
                     const stopData = item.data;
-
-                    // Dibuja un círculo base para la hora
-                    ctx.beginPath();
-                    ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
-                    ctx.fillStyle = '#fb923c';
-                    ctx.fill();
 
                     // Dibuja la hora
                     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -271,11 +273,13 @@
             }
 
             drawArrow(ctx, fromx, fromy, tox, toy) {
+                // Dibuja la línea principal
                 ctx.beginPath();
                 ctx.moveTo(fromx, fromy);
                 ctx.lineTo(tox, toy);
                 ctx.stroke();
 
+                // Dibuja la cabeza de la flecha
                 const headlen = 25;
                 const angle = Math.atan2(toy - fromy, tox - fromx);
 
