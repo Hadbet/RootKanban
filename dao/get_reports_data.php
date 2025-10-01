@@ -2,55 +2,98 @@
 header('Content-Type: application/json');
 require_once 'db/db_Rutas.php';
 
+// --- Parámetros de Filtro ---
+$startDate = $_GET['startDate'] ?? null;
+$endDate = $_GET['endDate'] ?? null;
+$usuario_filter = $_GET['usuario'] ?? null;
+$ruta_filter = $_GET['ruta'] ?? null;
+
 $response = ['success' => false, 'message' => '', 'data' => []];
 
 try {
     $con = new LocalConector();
     $conex = $con->conectar();
 
-    // 1. Obtener todas las rutas completadas con su usuario de la primera parada
+    // --- Construcción de la Consulta Dinámica ---
     $sql_all = "SELECT 
                     bc.IdRuta, 
                     bc.TiempoTotal, 
                     bc.FechaInicio, 
                     bc.FechaFinalizacion,
-                    (SELECT bp.Usuario FROM BitacoraParadas bp WHERE bp.FolioRuta = bc.IdRuta ORDER BY bp.Fecha ASC LIMIT 1) as Usuario
-                FROM BitacoraCompleta bc 
-                ORDER BY bc.FechaFinalizacion DESC";
+                    bc.Usuario
+                FROM BitacoraCompleta bc";
 
-    $result_all = $conex->query($sql_all);
-    if ($result_all === false) throw new Exception('Error al obtener rutas completas: ' . $conex->error);
+    $where_clauses = [];
+    $params = [];
+    $types = "";
+
+    if (!empty($startDate)) {
+        $where_clauses[] = "bc.FechaInicio >= ?";
+        $params[] = $startDate . " 00:00:00";
+        $types .= "s";
+    }
+    if (!empty($endDate)) {
+        $where_clauses[] = "bc.FechaInicio <= ?";
+        $params[] = $endDate . " 23:59:59";
+        $types .= "s";
+    }
+    if (!empty($usuario_filter)) {
+        $where_clauses[] = "bc.Usuario = ?";
+        $params[] = $usuario_filter;
+        $types .= "s";
+    }
+    if (!empty($ruta_filter)) {
+        // Asumimos que la primera parada nos da el número de ruta
+        $where_clauses[] = "(SELECT bp.Ruta FROM BitacoraParadas bp WHERE bp.FolioRuta = bc.IdRuta LIMIT 1) = ?";
+        $params[] = $ruta_filter;
+        $types .= "i";
+    }
+
+    if (!empty($where_clauses)) {
+        $sql_all .= " WHERE " . implode(" AND ", $where_clauses);
+    }
+
+    $sql_all .= " ORDER BY bc.FechaFinalizacion DESC";
+
+    $stmt = $conex->prepare($sql_all);
+    if ($stmt === false) throw new Exception('Error al preparar la consulta principal: ' . $conex->error);
+    if (!empty($types)) {
+        $stmt->bind_param($types, ...$params);
+    }
+
+    $stmt->execute();
+    $result_all = $stmt->get_result();
 
     $all_routes = [];
     while ($row = $result_all->fetch_assoc()) {
         $all_routes[] = $row;
     }
+    $stmt->close();
 
-    // 2. Procesar para análisis por turnos
+
+    // --- Procesamiento de Datos (igual que antes, pero sobre los datos filtrados) ---
     $routes_by_shift = array_map(function($route) {
         $hour = (int)date('H', strtotime($route['FechaInicio']));
         $minute = (int)date('i', strtotime($route['FechaInicio']));
         $time_in_minutes = $hour * 60 + $minute;
 
-        // Turno 1: 06:30 (390 min) a 14:29 (869 min)
-        // Turno 2: 14:30 (870 min) a 22:00 (1320 min)
-        // Turno 3: 22:01 (1321 min) a 06:29 (389 min del día siguiente)
-        if ($time_in_minutes >= 390 && $time_in_minutes < 870) {
-            $route['turno'] = '1';
-        } elseif ($time_in_minutes >= 870 && $time_in_minutes <= 1320) {
-            $route['turno'] = '2';
-        } else {
-            $route['turno'] = '3';
-        }
+        if ($time_in_minutes >= 390 && $time_in_minutes < 870) $route['turno'] = '1';
+        elseif ($time_in_minutes >= 870 && $time_in_minutes <= 1320) $route['turno'] = '2';
+        else $route['turno'] = '3';
         return $route;
     }, $all_routes);
 
-    // 3. Obtener el Top 5
-    // Ya tenemos todas las rutas, solo hay que ordenar y cortar
-    usort($all_routes, function($a, $b) {
-        return $b['TiempoTotal'] <=> $a['TiempoTotal'];
+    // Ordenar por tiempo para el análisis de turnos
+    usort($routes_by_shift, function($a, $b) {
+        return (int)$b['TiempoTotal'] <=> (int)$a['TiempoTotal'];
     });
-    $top_routes = array_slice($all_routes, 0, 5);
+
+    // Clonar y ordenar por tiempo para el top 5
+    $top_routes_data = $all_routes;
+    usort($top_routes_data, function($a, $b) {
+        return (int)$b['TiempoTotal'] <=> (int)$a['TiempoTotal'];
+    });
+    $top_routes = array_slice($top_routes_data, 0, 5);
 
     $response['success'] = true;
     $response['data'] = [
@@ -63,10 +106,9 @@ try {
     http_response_code(500);
     $response['message'] = 'Error del servidor: ' . $e->getMessage();
 } finally {
-    if (isset($conex) && $conex->ping()) {
-        $conex->close();
-    }
+    if (isset($conex) && $conex->ping()) $conex->close();
 }
 
 echo json_encode($response);
 ?>
+
