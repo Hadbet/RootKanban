@@ -230,7 +230,7 @@
                 })).filter(item => item.point);
 
                 // 3. Dibuja la ruta activa (naranja) con flechas de dirección
-                if (completedPoints.length > 1) {
+                if (completedPoints.length > 0) {
                     ctx.strokeStyle = '#f97316';
                     ctx.lineWidth = 12;
                     ctx.lineCap = 'round';
@@ -239,46 +239,22 @@
                     for (let i = 0; i < completedPoints.length - 1; i++) {
                         const startPoint = completedPoints[i].point;
                         const endPoint = completedPoints[i + 1].point;
-
-                        ctx.beginPath();
-                        ctx.moveTo(startPoint.x, startPoint.y);
-                        ctx.lineTo(endPoint.x, endPoint.y);
-                        ctx.stroke();
-
-                        const midX = (startPoint.x + endPoint.x) / 2;
-                        const midY = (startPoint.y + endPoint.y) / 2;
-                        const angle = Math.atan2(endPoint.y - startPoint.y, endPoint.x - startPoint.x);
-
-                        ctx.save();
-                        ctx.translate(midX, midY);
-                        ctx.rotate(angle);
-                        ctx.fillStyle = '#f97316';
-
-                        ctx.beginPath();
-                        ctx.moveTo(10, 0);
-                        ctx.lineTo(-10, -8);
-                        ctx.lineTo(-10, 8);
-                        ctx.closePath();
-                        ctx.fill();
-
-                        ctx.restore();
+                        this.drawArrow(ctx, startPoint.x, startPoint.y, endPoint.x, endPoint.y);
                     }
                 }
 
-
-                // 4. Dibuja un círculo prominente y la HORA en las paradas completadas
+                // 4. Dibuja la HORA en las paradas completadas (el círculo grande se elimina)
                 completedPoints.forEach(item => {
                     const point = item.point;
                     const stopData = item.data;
 
+                    // Dibuja un círculo base para la hora
                     ctx.beginPath();
-                    ctx.arc(point.x, point.y, 12, 0, 2 * Math.PI);
+                    ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
                     ctx.fillStyle = '#fb923c';
                     ctx.fill();
-                    ctx.strokeStyle = 'white';
-                    ctx.lineWidth = 3;
-                    ctx.stroke();
 
+                    // Dibuja la hora
                     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                     ctx.fillRect(point.x - 35, point.y + 15, 70, 25);
                     ctx.fillStyle = 'white';
@@ -289,7 +265,31 @@
                     ctx.fillText(timeString, point.x, point.y + 33);
                 });
 
-                this.updateTruckPosition(completedPoints[completedPoints.length - 1].point);
+                if (completedPoints.length > 0) {
+                    this.updateTruckPosition(completedPoints[completedPoints.length - 1].point);
+                }
+            }
+
+            drawArrow(ctx, fromx, fromy, tox, toy) {
+                ctx.beginPath();
+                ctx.moveTo(fromx, fromy);
+                ctx.lineTo(tox, toy);
+                ctx.stroke();
+
+                const headlen = 25;
+                const angle = Math.atan2(toy - fromy, tox - fromx);
+
+                ctx.save();
+                ctx.fillStyle = '#f97316';
+                ctx.translate(tox, toy);
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-headlen, -12);
+                ctx.lineTo(-headlen, 12);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
             }
 
             updateTruckPosition(lastPoint) {
