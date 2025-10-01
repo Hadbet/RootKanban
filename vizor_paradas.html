@@ -187,17 +187,17 @@
                 ctx.drawImage(image, 0, 0);
 
                 // 1. Dibuja el trazado completo en rojo y punteado
-                ctx.save(); // Guardar estado del contexto
-                ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)'; // rojo con transparencia
+                ctx.save();
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
                 ctx.lineWidth = 8;
-                ctx.setLineDash([15, 10]); // LÍNEA PUNTEADA
+                ctx.setLineDash([15, 10]);
                 ctx.beginPath();
                 ctx.moveTo(this.stopsData[0].x, this.stopsData[0].y);
                 for (let i = 1; i < this.stopsData.length; i++) {
                     ctx.lineTo(this.stopsData[i].x, this.stopsData[i].y);
                 }
                 ctx.stroke();
-                ctx.restore(); // Restaurar a línea sólida
+                ctx.restore();
 
                 // 2. Dibuja todas las paradas designadas con su etiqueta "P#"
                 this.stopsData.forEach(point => {
@@ -211,7 +211,6 @@
                         ctx.font = 'bold 18px Inter';
                         ctx.textAlign = 'center';
 
-                        // ETIQUETA "P#"
                         let label = point.label;
                         if (!isNaN(parseInt(label))) {
                             label = `P${label}`;
@@ -225,26 +224,47 @@
                     return;
                 }
 
-                // Unir datos de paradas completadas con sus coordenadas
                 const completedPoints = completedStopsData.map(stop => ({
                     point: this.stopMap.get(String(stop.Parada)),
                     data: stop
                 })).filter(item => item.point);
 
-
-                // 3. Dibuja la ruta activa (naranja) conectando solo las paradas completadas
-                if (completedPoints.length > 0) {
+                // 3. Dibuja la ruta activa (naranja) con flechas de dirección
+                if (completedPoints.length > 1) {
                     ctx.strokeStyle = '#f97316';
                     ctx.lineWidth = 12;
                     ctx.lineCap = 'round';
                     ctx.lineJoin = 'round';
-                    ctx.beginPath();
-                    ctx.moveTo(completedPoints[0].point.x, completedPoints[0].point.y);
-                    for (let i = 1; i < completedPoints.length; i++) {
-                        ctx.lineTo(completedPoints[i].point.x, completedPoints[i].point.y);
+
+                    for (let i = 0; i < completedPoints.length - 1; i++) {
+                        const startPoint = completedPoints[i].point;
+                        const endPoint = completedPoints[i + 1].point;
+
+                        ctx.beginPath();
+                        ctx.moveTo(startPoint.x, startPoint.y);
+                        ctx.lineTo(endPoint.x, endPoint.y);
+                        ctx.stroke();
+
+                        const midX = (startPoint.x + endPoint.x) / 2;
+                        const midY = (startPoint.y + endPoint.y) / 2;
+                        const angle = Math.atan2(endPoint.y - startPoint.y, endPoint.x - startPoint.x);
+
+                        ctx.save();
+                        ctx.translate(midX, midY);
+                        ctx.rotate(angle);
+                        ctx.fillStyle = '#f97316';
+
+                        ctx.beginPath();
+                        ctx.moveTo(10, 0);
+                        ctx.lineTo(-10, -8);
+                        ctx.lineTo(-10, 8);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        ctx.restore();
                     }
-                    ctx.stroke();
                 }
+
 
                 // 4. Dibuja un círculo prominente y la HORA en las paradas completadas
                 completedPoints.forEach(item => {
@@ -259,7 +279,6 @@
                     ctx.lineWidth = 3;
                     ctx.stroke();
 
-                    // DIBUJA LA HORA DEL ESCANEO
                     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                     ctx.fillRect(point.x - 35, point.y + 15, 70, 25);
                     ctx.fillStyle = 'white';
