@@ -52,7 +52,14 @@
             <!-- COLUMNA RUTA 1 -->
             <div class="flex flex-col gap-6">
                 <div class="bg-gray-800 p-4 rounded-xl shadow-2xl">
-                    <h2 class="text-xl font-bold text-green-400 mb-2">Ruta 1 en Progreso</h2>
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-xl font-bold text-green-400">Ruta 1 en Progreso</h2>
+                        <div id="driver-info-1" class="text-center hidden">
+                            <img id="driver-photo-1" src="" alt="Foto Conductor" class="w-16 h-16 rounded-full border-2 border-orange-400 object-cover mx-auto bg-gray-700"
+                                 onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22 class=%22feather feather-user%22><path d=%22M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2%22></path><circle cx=%2212%22 cy=%227%22 r=%224%22></circle></svg>';">
+                            <p id="driver-id-1" class="text-xs text-gray-300 mt-1 font-mono"></p>
+                        </div>
+                    </div>
                     <div class="canvas-container relative w-full">
                         <canvas id="layout-canvas-1" class="block w-full h-full rounded-lg"></canvas>
                         <div id="truck-1" class="truck-icon"></div>
@@ -79,7 +86,14 @@
             <!-- COLUMNA RUTA 2 -->
             <div class="flex flex-col gap-6">
                 <div class="bg-gray-800 p-4 rounded-xl shadow-2xl">
-                    <h2 class="text-xl font-bold text-green-400 mb-2">Ruta 2 en Progreso</h2>
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-xl font-bold text-green-400">Ruta 2 en Progreso</h2>
+                        <div id="driver-info-2" class="text-center hidden">
+                            <img id="driver-photo-2" src="" alt="Foto Conductor" class="w-16 h-16 rounded-full border-2 border-orange-400 object-cover mx-auto bg-gray-700"
+                                 onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22 class=%22feather feather-user%22><path d=%22M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2%22></path><circle cx=%2212%22 cy=%227%22 r=%224%22></circle></svg>';">
+                            <p id="driver-id-2" class="text-xs text-gray-300 mt-1 font-mono"></p>
+                        </div>
+                    </div>
                     <div class="canvas-container relative w-full">
                         <canvas id="layout-canvas-2" class="block w-full h-full rounded-lg"></canvas>
                         <div id="truck-2" class="truck-icon"></div>
@@ -160,24 +174,42 @@
                 this.truckElement = document.getElementById(`truck-${routeId}`);
                 this.bitacoraBody = document.getElementById(`bitacora-body-${routeId}`);
                 this.loadingActive = document.getElementById(`loading-active-${routeId}`);
+
+                // Nuevos elementos para la info del conductor
+                this.driverInfoContainer = document.getElementById(`driver-info-${routeId}`);
+                this.driverPhoto = document.getElementById(`driver-photo-${routeId}`);
+                this.driverId = document.getElementById(`driver-id-${routeId}`);
             }
 
             async fetchData() {
                 try {
                     const response = await fetch(`https://grammermx.com/Logistica/RootKanBan/dao/get_stops.php?ruta=${this.routeId}`);
                     const result = await response.json();
-                    if (result.success) { // Procesa incluso si está vacío para limpiar la tabla
+
+                    if (result.success && result.data && result.data.length > 0) {
                         this.loadingActive.style.display = 'none';
-                        this.redrawCanvas(result.data || []);
-                        this.updateActiveTable(result.data || []);
+                        this.updateDriverInfo(result.data[0].Usuario); // Mostrar foto y ID
+                        this.redrawCanvas(result.data);
+                        this.updateActiveTable(result.data);
                     } else {
-                        // Manejo de error si la petición falla
-                        this.loadingActive.textContent = 'Error al cargar la ruta.';
+                        this.loadingActive.textContent = 'Esperando una nueva ruta...';
+                        this.updateDriverInfo(null); // Ocultar foto y ID
                         this.redrawCanvas([]);
                         this.updateActiveTable([]);
                     }
                 } catch (error) {
                     console.error(`Error en ruta activa ${this.routeId}:`, error);
+                }
+            }
+
+            updateDriverInfo(driverId) {
+                if (driverId) {
+                    const paddedId = String(driverId).padStart(8, '0');
+                    this.driverPhoto.src = `https://grammermx.com/Fotos/${paddedId}.png`;
+                    this.driverId.textContent = driverId;
+                    this.driverInfoContainer.classList.remove('hidden');
+                } else {
+                    this.driverInfoContainer.classList.add('hidden');
                 }
             }
 
@@ -305,7 +337,6 @@
             updateActiveTable(completedStops) {
                 this.bitacoraBody.innerHTML = '';
                 const completedStopMap = new Map(completedStops.map(s => [s.Parada.toString(), s]));
-
                 const allPossibleStops = this.stopsData.filter(s => s.isStop);
 
                 allPossibleStops.forEach(possibleStop => {
