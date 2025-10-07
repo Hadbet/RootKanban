@@ -16,7 +16,7 @@ try {
     $con = new LocalConector();
     $conex = $con->conectar();
 
-    $sql = "SELECT Ruta, Parada, Fecha FROM BitacoraParadas WHERE FolioRuta = ? ORDER BY Fecha ASC";
+    $sql = "SELECT Ruta, Parada, Fecha,Usuario FROM BitacoraParadas WHERE FolioRuta = ? ORDER BY Fecha ASC";
     $stmt = $conex->prepare($sql);
     if ($stmt === false) throw new Exception('Error al preparar la consulta: ' . $conex->error);
 
